@@ -15,6 +15,11 @@ public struct EditAccountView: View {
     case error
   }
 
+  private enum ViewState2 {
+    case loading
+    case loaded
+    case error
+  }
   private struct FieldEdit: Identifiable {
     let id = UUID()
     var name: String
