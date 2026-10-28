@@ -6,6 +6,7 @@ import NukeUI
 import PhotosUI
 import StatusKit
 import SwiftUI
+import os
 
 @MainActor
 public struct EditAccountView: View {
@@ -15,11 +16,6 @@ public struct EditAccountView: View {
     case error
   }
 
-  private enum ViewState2 {
-    case loading
-    case loaded
-    case error
-  }
   private struct FieldEdit: Identifiable {
     let id = UUID()
     var name: String
@@ -79,6 +75,7 @@ public struct EditAccountView: View {
 
   @State private var isPhotoPickerPresented: Bool = false
   @State private var changingImage: ImageKind?
+  @State private var isUpdatingImage: Bool = false
   @State private var mediaPickers: [PhotosPickerItem] = []
 
   @State private var isSaving: Bool = false
@@ -120,11 +117,6 @@ public struct EditAccountView: View {
           Button("alert.button.ok", action: {})
         }, message: { Text("account.edit.error.save.message") }
       )
-      .onChange(of: isPhotoPickerPresented) { _, isPresented in
-        if !isPresented, mediaPickers.isEmpty {
-          changingImage = nil
-        }
-      }
       .onChange(of: mediaPickers) { _, pickers in
         guard let item = pickers.first else { return }
         Task { await handlePickedItem(item) }
@@ -219,6 +211,7 @@ public struct EditAccountView: View {
               .foregroundStyle(.white)
           }
           .buttonStyle(.borderedProminent)
+          .disabled(isUpdatingImage)
           .clipShape(Circle())
           .offset(x: -8, y: 8)
           .padding(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 0))
@@ -226,7 +219,7 @@ public struct EditAccountView: View {
       }
       .frame(minWidth: 0, maxWidth: .infinity)
       .overlay {
-        if changingImage != nil {
+        if isUpdatingImage {
           ZStack(alignment: .center) {
             RoundedRectangle(cornerRadius: 8)
               .foregroundStyle(Color.black.opacity(0.40))
@@ -353,7 +346,7 @@ public struct EditAccountView: View {
           Text("action.save").bold()
         }
       }
-      .disabled(viewState != .loaded)
+      .disabled(viewState != .loaded || isUpdatingImage)
     }
   }
 
@@ -375,13 +368,22 @@ public struct EditAccountView: View {
       withAnimation {
         viewState = .loaded
       }
+    } catch is CancellationError {
+      return
+    } catch let error as URLError where error.code == .cancelled {
+      return
     } catch {
       viewState = .error
     }
   }
 
   private func refreshImages() async {
-    guard let account: Account = try? await client.get(endpoint: Accounts.verifyCredentials) else {
+    let account: Account
+    do {
+      account = try await client.get(endpoint: Accounts.verifyCredentials)
+    } catch {
+      Logger(subsystem: "com.icecubesapp", category: "account-edit")
+        .error("Failed to refresh profile images: \(error.localizedDescription)")
       return
     }
     avatar = account.haveAvatar ? account.avatar : nil
@@ -389,7 +391,7 @@ public struct EditAccountView: View {
   }
 
   private func save() async -> Bool {
-    guard viewState == .loaded, !isSaving else { return false }
+    guard viewState == .loaded, !isSaving, !isUpdatingImage else { return false }
     isSaving = true
     defer { isSaving = false }
     do {
@@ -414,6 +416,9 @@ public struct EditAccountView: View {
   }
 
   private func deleteImage(_ kind: ImageKind) async {
+    guard !isUpdatingImage else { return }
+    isUpdatingImage = true
+    defer { isUpdatingImage = false }
     do {
       let response = try await client.delete(endpoint: kind.deleteEndpoint)
       guard response?.statusCode == 200 else {
@@ -430,8 +435,9 @@ public struct EditAccountView: View {
   }
 
   private func handlePickedItem(_ item: PhotosPickerItem) async {
+    isUpdatingImage = true
     defer {
-      changingImage = nil
+      isUpdatingImage = false
       mediaPickers = []
     }
     guard let kind = changingImage else { return }
