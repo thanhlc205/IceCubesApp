@@ -40,7 +40,7 @@ public struct AccountsListView: View {
 
   private enum ViewState {
     enum PagingState {
-      case hasNextPage, none
+      case hasNextPage(maxId: String), none
     }
 
     case loading
@@ -54,9 +54,6 @@ public struct AccountsListView: View {
   private let mode: AccountsListMode
 
   @State private var state = ViewState.loading
-  @State private var accounts: [Account] = []
-  @State private var relationships: [Relationship] = []
-  @State private var nextPageId: String?
   @State private var totalCount: Int?
   @State private var accountId: String?
   @State private var searchQuery: String = ""
@@ -198,9 +195,9 @@ public struct AccountsListView: View {
       #endif
 
       switch nextPageState {
-      case .hasNextPage:
+      case let .hasNextPage(maxId):
         NextPageView {
-          try await fetchNextPage()
+          try await fetchNextPage(maxId: maxId)
         }
         #if !os(visionOS)
           .listRowBackground(theme.primaryBackgroundColor)
@@ -219,7 +216,7 @@ public struct AccountsListView: View {
   }
 
   private func nextPageState(for link: LinkHandler?) -> ViewState.PagingState {
-    link?.maxId != nil ? .hasNextPage : .none
+    link?.maxId.map { .hasNextPage(maxId: $0) } ?? .none
   }
 
   private func fetchPage(maxId: String?) async throws -> ([Account], LinkHandler?) {
@@ -257,37 +254,35 @@ public struct AccountsListView: View {
       default:
         break
       }
-      let link: LinkHandler?
-      (accounts, link) = try await fetchPage(maxId: nil)
-      nextPageId = link?.maxId
-      relationships = try await client.get(
+      let (accounts, link) = try await fetchPage(maxId: nil)
+      let relationships: [Relationship] = try await client.get(
         endpoint: Accounts.relationships(ids: accounts.map(\.id)))
       state = .display(
         accounts: accounts,
         relationships: relationships,
         nextPageState: nextPageState(for: link))
-    } catch {}
+    } catch {
+      guard !Task.isCancelled else { return }
+      state = .error(error: error)
+    }
   }
 
-  private func fetchNextPage() async throws {
-    guard let nextPageId else { return }
-    let (newAccounts, link) = try await fetchPage(maxId: nextPageId)
-    accounts.append(contentsOf: newAccounts)
+  private func fetchNextPage(maxId: String) async throws {
+    let (newAccounts, link) = try await fetchPage(maxId: maxId)
     let newRelationships: [Relationship] =
       try await client.get(endpoint: Accounts.relationships(ids: newAccounts.map(\.id)))
-    relationships.append(contentsOf: newRelationships)
-    self.nextPageId = link?.maxId
+    guard case let .display(accounts, relationships, _) = state else { return }
     state = .display(
-      accounts: accounts,
-      relationships: relationships,
+      accounts: accounts + newAccounts,
+      relationships: relationships + newRelationships,
       nextPageState: nextPageState(for: link))
   }
 
   private func search() async {
     guard !searchQuery.isEmpty else { return }
     do {
-      state = .loading
       try await Task.sleep(for: .milliseconds(250))
+      state = .loading
       let results: SearchResults = try await client.get(
         endpoint: Search.search(
           query: searchQuery,
@@ -303,7 +298,10 @@ public struct AccountsListView: View {
           relationships: relationships,
           nextPageState: .none)
       }
-    } catch {}
+    } catch {
+      guard !Task.isCancelled else { return }
+      state = .error(error: error)
+    }
   }
 }
 
