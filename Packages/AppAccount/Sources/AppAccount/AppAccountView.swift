@@ -30,7 +30,8 @@ public struct AppAccountView: View {
 
   private let appAccount: AppAccount
   @State private var account: Account?
-  @State private var savedAccountName: String?
+  /// Name saved by the back-fill during this task run; reset whenever the task restarts.
+  @State private var backfilledName: String?
 
   private let isCompact: Bool
   private let isInSettings: Bool
@@ -43,7 +44,6 @@ public struct AppAccountView: View {
     showBadge: Bool = false, isParentPresented: Binding<Bool>
   ) {
     self.appAccount = appAccount
-    _savedAccountName = State(initialValue: appAccount.accountName)
     self.isCompact = isCompact
     self.isInSettings = isInSettings
     self.showBadge = showBadge
@@ -64,9 +64,11 @@ public struct AppAccountView: View {
   }
 
   private func fetchAccount() async {
-    if let cached = AppAccountCache.accounts[appAccount.id] {
-      account = cached
-      backfillAccountName(from: cached)
+    backfilledName = nil
+    // Assigning the cache lookup also clears stale data when the row is reused for another account.
+    account = AppAccountCache.accounts[appAccount.id]
+    if let account {
+      backfillAccountName(from: account)
     }
     let client = MastodonClient(server: appAccount.server, oauthToken: appAccount.oauthToken)
     guard let fetched: Account = try? await client.get(endpoint: Accounts.verifyCredentials)
@@ -77,11 +79,11 @@ public struct AppAccountView: View {
   }
 
   private func backfillAccountName(from account: Account) {
-    guard savedAccountName == nil else { return }
+    guard appAccount.accountName == nil, backfilledName == nil else { return }
     var updated = appAccount
     updated.accountName = "\(account.acct)@\(appAccount.server)"
     try? updated.save()
-    savedAccountName = updated.accountName
+    backfilledName = updated.accountName
   }
 
   @ViewBuilder
@@ -144,7 +146,7 @@ public struct AppAccountView: View {
           }
         } else {
           ProgressView()
-          Text(savedAccountName ?? appAccount.displayAcct(for: account))
+          Text(backfilledName ?? appAccount.displayAcct(for: nil))
             .font(.scaledSubheadline)
             .foregroundStyle(Color.secondary)
             .padding(.leading, 6)
