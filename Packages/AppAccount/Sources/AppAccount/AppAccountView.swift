@@ -15,6 +15,7 @@ extension AppAccount {
   }
 }
 
+/// In-memory cache of fetched accounts, keyed by `AppAccount.id`.
 @MainActor
 private enum AppAccountCache {
   static var accounts: [String: Account] = [:]
@@ -27,8 +28,9 @@ public struct AppAccountView: View {
   @Environment(AppAccountsManager.self) private var appAccounts
   @Environment(UserPreferences.self) private var preferences
 
-  @State private var appAccount: AppAccount
+  private let appAccount: AppAccount
   @State private var account: Account?
+  @State private var savedAccountName: String?
 
   private let isCompact: Bool
   private let isInSettings: Bool
@@ -40,7 +42,8 @@ public struct AppAccountView: View {
     appAccount: AppAccount, isCompact: Bool = false, isInSettings: Bool = true,
     showBadge: Bool = false, isParentPresented: Binding<Bool>
   ) {
-    _appAccount = State(initialValue: appAccount)
+    self.appAccount = appAccount
+    _savedAccountName = State(initialValue: appAccount.accountName)
     self.isCompact = isCompact
     self.isInSettings = isInSettings
     self.showBadge = showBadge
@@ -55,28 +58,36 @@ public struct AppAccountView: View {
         fullView
       }
     }
-    .task {
+    .task(id: appAccount.id) {
       await fetchAccount()
     }
   }
 
   private func fetchAccount() async {
-    account = AppAccountCache.accounts[appAccount.id]
+    if let cached = AppAccountCache.accounts[appAccount.id] {
+      account = cached
+      backfillAccountName(from: cached)
+    }
     let client = MastodonClient(server: appAccount.server, oauthToken: appAccount.oauthToken)
     guard let fetched: Account = try? await client.get(endpoint: Accounts.verifyCredentials)
     else { return }
     account = fetched
     AppAccountCache.accounts[appAccount.id] = fetched
-    if appAccount.accountName == nil {
-      appAccount.accountName = "\(fetched.acct)@\(appAccount.server)"
-      try? appAccount.save()
-    }
+    backfillAccountName(from: fetched)
+  }
+
+  private func backfillAccountName(from account: Account) {
+    guard savedAccountName == nil else { return }
+    var updated = appAccount
+    updated.accountName = "\(account.acct)@\(appAccount.server)"
+    try? updated.save()
+    savedAccountName = updated.accountName
   }
 
   @ViewBuilder
   private var compactView: some View {
     HStack {
-      if let account = account {
+      if let account {
         AvatarView(account.avatar)
       } else {
         ProgressView()
@@ -87,7 +98,7 @@ public struct AppAccountView: View {
   private var fullView: some View {
     Button {
       if appAccounts.currentAccount.id == appAccount.id,
-        let account = account
+        let account
       {
         if isInSettings {
           routerPath.navigate(
@@ -108,7 +119,7 @@ public struct AppAccountView: View {
       }
     } label: {
       HStack {
-        if let account = account {
+        if let account {
           ZStack(alignment: .topTrailing) {
             AvatarView(account.avatar)
             if appAccount.id == appAccounts.currentAccount.id {
@@ -133,13 +144,13 @@ public struct AppAccountView: View {
           }
         } else {
           ProgressView()
-          Text(appAccount.accountName ?? appAccount.displayAcct(for: account))
+          Text(savedAccountName ?? appAccount.displayAcct(for: account))
             .font(.scaledSubheadline)
             .foregroundStyle(Color.secondary)
             .padding(.leading, 6)
         }
         VStack(alignment: .leading) {
-          if let account = account {
+          if let account {
             EmojiTextApp(.init(stringValue: account.safeDisplayName), emojis: account.emojis)
               .foregroundColor(theme.labelColor)
             Text("\(account.username)@\(appAccount.server)")
