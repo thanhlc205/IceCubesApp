@@ -38,9 +38,9 @@ public struct AccountsListView: View {
   @Environment(MastodonClient.self) private var client
   @Environment(CurrentAccount.self) private var currentAccount
 
-  private enum ViewState {
-    enum PagingState {
-      case hasNextPage(maxId: String), none
+  public enum ViewState {
+    public enum PagingState {
+      case hasNextPage, none
     }
 
     case loading
@@ -54,10 +54,13 @@ public struct AccountsListView: View {
   private let mode: AccountsListMode
 
   @State private var state = ViewState.loading
+  @State private var accounts: [Account] = []
+  @State private var relationships: [Relationship] = []
   @State private var totalCount: Int?
   @State private var accountId: String?
   @State private var searchQuery: String = ""
-  @State private var isSearching: Bool = false
+  @State private var nextPageId: String?
+  @State private var didAppear: Bool = false
 
   public init(mode: AccountsListMode) {
     self.mode = mode
@@ -86,7 +89,8 @@ public struct AccountsListView: View {
       .navigationTitle(mode.title)
       .navigationBarTitleDisplayMode(.inline)
       .task {
-        guard case .loading = state else { return }
+        guard !didAppear else { return }
+        didAppear = true
         await fetch()
       }
   }
@@ -114,9 +118,13 @@ public struct AccountsListView: View {
     .task(id: searchQuery) {
       if !searchQuery.isEmpty {
         await search()
-      } else if isSearching {
-        isSearching = false
-        await fetch()
+      }
+    }
+    .onChange(of: searchQuery) { _, newValue in
+      if newValue.isEmpty {
+        Task {
+          await fetch()
+        }
       }
     }
   }
@@ -175,10 +183,8 @@ public struct AccountsListView: View {
           )
           .listRowSeparator(.hidden)
         } else {
-          let relationshipsById = Dictionary(
-            relationships.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
           ForEach(accounts) { account in
-            if let relationship = relationshipsById[account.id] {
+            if let relationship = relationships.first(where: { $0.id == account.id }) {
               AccountsListRow(
                 viewModel: .init(
                   account: account,
@@ -192,9 +198,9 @@ public struct AccountsListView: View {
       #endif
 
       switch nextPageState {
-      case let .hasNextPage(maxId):
+      case .hasNextPage:
         NextPageView {
-          try await fetchNextPage(maxId: maxId)
+          try await fetchNextPage()
         }
         #if !os(visionOS)
           .listRowBackground(theme.primaryBackgroundColor)
@@ -205,105 +211,122 @@ public struct AccountsListView: View {
       }
 
     case let .error(error):
-      VStack(spacing: 12) {
-        Text(error.localizedDescription)
-        Button("Retry") {
-          Task {
-            if searchQuery.isEmpty {
-              await fetch()
-            } else {
-              await search()
-            }
-          }
-        }
-      }
-      .frame(maxWidth: .infinity)
-      #if !os(visionOS)
-        .listRowBackground(theme.primaryBackgroundColor)
-      #endif
+      Text(error.localizedDescription)
+        #if !os(visionOS)
+          .listRowBackground(theme.primaryBackgroundColor)
+        #endif
     }
   }
+}
 
-  private func nextPageState(for link: LinkHandler?) -> ViewState.PagingState {
-    link?.maxId.map { .hasNextPage(maxId: $0) } ?? .none
-  }
+// MARK: - Loading
 
-  private func fetchPage(maxId: String?) async throws -> ([Account], LinkHandler?) {
-    switch mode {
-    case let .followers(accountId):
-      return try await client.getWithLink(endpoint: Accounts.followers(id: accountId, maxId: maxId))
-    case let .following(accountId):
-      return try await client.getWithLink(endpoint: Accounts.following(id: accountId, maxId: maxId))
-    case let .rebloggedBy(statusId):
-      return try await client.getWithLink(
-        endpoint: Statuses.rebloggedBy(id: statusId, maxId: maxId))
-    case let .favoritedBy(statusId):
-      return try await client.getWithLink(
-        endpoint: Statuses.favoritedBy(id: statusId, maxId: maxId))
-    case let .accountsList(accounts):
-      return (maxId == nil ? accounts : [], nil)
-    case .blocked:
-      return try await client.getWithLink(endpoint: Accounts.blockList(maxId: maxId))
-    case .muted:
-      return try await client.getWithLink(endpoint: Accounts.muteList(maxId: maxId))
-    }
-  }
-
+extension AccountsListView {
   private func fetch() async {
     do {
-      if case .display = state {
-      } else {
-        state = .loading
-      }
+      state = .loading
+      let link: LinkHandler?
       switch mode {
-      case let .followers(id):
-        let account: Account = try await client.get(endpoint: Accounts.accounts(id: id))
+      case let .followers(accountId):
+        let account: Account = try await client.get(endpoint: Accounts.accounts(id: accountId))
         totalCount = account.followersCount
-      case let .following(id):
-        accountId = id
-        let account: Account = try await client.get(endpoint: Accounts.accounts(id: id))
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Accounts.followers(
+            id: accountId,
+            maxId: nil))
+      case let .following(accountId):
+        self.accountId = accountId
+        let account: Account = try await client.get(endpoint: Accounts.accounts(id: accountId))
         totalCount = account.followingCount
-      default:
-        break
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Accounts.following(
+            id: accountId,
+            maxId: nil))
+      case let .rebloggedBy(statusId):
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Statuses.rebloggedBy(
+            id: statusId,
+            maxId: nil))
+      case let .favoritedBy(statusId):
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Statuses.favoritedBy(
+            id: statusId,
+            maxId: nil))
+      case let .accountsList(accounts):
+        self.accounts = accounts
+        link = nil
+
+      case .blocked:
+        (accounts, link) = try await client.getWithLink(endpoint: Accounts.blockList(maxId: nil))
+
+      case .muted:
+        (accounts, link) = try await client.getWithLink(endpoint: Accounts.muteList(maxId: nil))
       }
-      let (accounts, link) = try await fetchPage(maxId: nil)
-      let relationships: [Relationship] =
-        accounts.isEmpty
-        ? []
-        : try await client.get(endpoint: Accounts.relationships(ids: accounts.map(\.id)))
-      guard !Task.isCancelled else { return }
+      nextPageId = link?.maxId
+      relationships = try await client.get(
+        endpoint:
+          Accounts.relationships(ids: accounts.map(\.id)))
       state = .display(
         accounts: accounts,
         relationships: relationships,
-        nextPageState: nextPageState(for: link))
-    } catch {
-      guard !Task.isCancelled else { return }
-      state = .error(error: error)
-    }
+        nextPageState: link?.maxId != nil ? .hasNextPage : .none)
+    } catch {}
   }
 
-  private func fetchNextPage(maxId: String) async throws {
-    let (newAccounts, link) = try await fetchPage(maxId: maxId)
+  private func fetchNextPage() async throws {
+    guard let nextPageId else { return }
+    let newAccounts: [Account]
+    let link: LinkHandler?
+    switch mode {
+    case let .followers(accountId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Accounts.followers(
+          id: accountId,
+          maxId: nextPageId))
+    case let .following(accountId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Accounts.following(
+          id: accountId,
+          maxId: nextPageId))
+    case let .rebloggedBy(statusId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Statuses.rebloggedBy(
+          id: statusId,
+          maxId: nextPageId))
+    case let .favoritedBy(statusId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Statuses.favoritedBy(
+          id: statusId,
+          maxId: nextPageId))
+    case .accountsList:
+      newAccounts = []
+      link = nil
+
+    case .blocked:
+      (newAccounts, link) = try await client.getWithLink(endpoint: Accounts.blockList(maxId: nextPageId))
+
+    case .muted:
+      (newAccounts, link) = try await client.getWithLink(endpoint: Accounts.muteList(maxId: nextPageId))
+    }
+
+    accounts.append(contentsOf: newAccounts)
     let newRelationships: [Relationship] =
-      newAccounts.isEmpty
-      ? []
-      : try await client.get(endpoint: Accounts.relationships(ids: newAccounts.map(\.id)))
-    guard case let .display(accounts, relationships, .hasNextPage(currentMaxId)) = state,
-      currentMaxId == maxId
-    else { return }
+      try await client.get(endpoint: Accounts.relationships(ids: newAccounts.map(\.id)))
+
+    relationships.append(contentsOf: newRelationships)
+    self.nextPageId = link?.maxId
     state = .display(
-      accounts: accounts + newAccounts,
-      relationships: relationships + newRelationships,
-      nextPageState: nextPageState(for: link))
+      accounts: accounts,
+      relationships: relationships,
+      nextPageState: link?.maxId != nil ? .hasNextPage : .none)
   }
 
   private func search() async {
     guard !searchQuery.isEmpty else { return }
     do {
-      try await Task.sleep(for: .milliseconds(250))
-      isSearching = true
       state = .loading
-      let results: SearchResults = try await client.get(
+      try await Task.sleep(for: .milliseconds(250))
+      var results: SearchResults = try await client.get(
         endpoint: Search.search(
           query: searchQuery,
           type: .accounts,
@@ -312,17 +335,14 @@ public struct AccountsListView: View {
         forceVersion: .v2)
       let relationships: [Relationship] =
         try await client.get(endpoint: Accounts.relationships(ids: results.accounts.map(\.id)))
-      guard !Task.isCancelled else { return }
+      results.relationships = relationships
       withAnimation {
         state = .display(
           accounts: results.accounts,
           relationships: relationships,
           nextPageState: .none)
       }
-    } catch {
-      guard !Task.isCancelled else { return }
-      state = .error(error: error)
-    }
+    } catch {}
   }
 }
 
