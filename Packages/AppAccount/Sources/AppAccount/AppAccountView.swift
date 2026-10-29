@@ -1,7 +1,25 @@
 import DesignSystem
 import EmojiText
 import Env
+import Models
+import NetworkClient
 import SwiftUI
+
+extension AppAccount {
+  func displayAcct(for account: Account?) -> String {
+    if let accountName {
+      accountName
+    } else {
+      "@\(account?.acct ?? "...")@\(server)"
+    }
+  }
+}
+
+/// In-memory cache of fetched accounts, keyed by `AppAccount.id`.
+@MainActor
+private enum AppAccountCache {
+  static var accounts: [String: Account] = [:]
+}
 
 @MainActor
 public struct AppAccountView: View {
@@ -10,34 +28,68 @@ public struct AppAccountView: View {
   @Environment(AppAccountsManager.self) private var appAccounts
   @Environment(UserPreferences.self) private var preferences
 
-  @State var viewModel: AppAccountViewModel
+  private let appAccount: AppAccount
+  @State private var account: Account?
+  /// Name saved by the back-fill during this task run; reset whenever the task restarts.
+  @State private var backfilledName: String?
+
+  private let isCompact: Bool
+  private let isInSettings: Bool
+  private let showBadge: Bool
 
   @Binding var isParentPresented: Bool
 
-  public init(viewModel: AppAccountViewModel, isParentPresented: Binding<Bool>) {
-    self.viewModel = viewModel
+  public init(
+    appAccount: AppAccount, isCompact: Bool = false, isInSettings: Bool = true,
+    showBadge: Bool = false, isParentPresented: Binding<Bool>
+  ) {
+    self.appAccount = appAccount
+    self.isCompact = isCompact
+    self.isInSettings = isInSettings
+    self.showBadge = showBadge
     _isParentPresented = isParentPresented
   }
 
   public var body: some View {
     Group {
-      if viewModel.isCompact {
+      if isCompact {
         compactView
       } else {
         fullView
       }
     }
-    .onAppear {
-      Task {
-        await viewModel.fetchAccount()
-      }
+    .task(id: appAccount.id) {
+      await fetchAccount()
     }
+  }
+
+  private func fetchAccount() async {
+    backfilledName = nil
+    // Assigning the cache lookup also clears stale data when the row is reused for another account.
+    account = AppAccountCache.accounts[appAccount.id]
+    if let account {
+      backfillAccountName(from: account)
+    }
+    let client = MastodonClient(server: appAccount.server, oauthToken: appAccount.oauthToken)
+    guard let fetched: Account = try? await client.get(endpoint: Accounts.verifyCredentials)
+    else { return }
+    account = fetched
+    AppAccountCache.accounts[appAccount.id] = fetched
+    backfillAccountName(from: fetched)
+  }
+
+  private func backfillAccountName(from account: Account) {
+    guard appAccount.accountName == nil, backfilledName == nil else { return }
+    var updated = appAccount
+    updated.accountName = "\(account.acct)@\(appAccount.server)"
+    try? updated.save()
+    backfilledName = updated.accountName
   }
 
   @ViewBuilder
   private var compactView: some View {
     HStack {
-      if let account = viewModel.account {
+      if let account {
         AvatarView(account.avatar)
       } else {
         ProgressView()
@@ -47,12 +99,12 @@ public struct AppAccountView: View {
 
   private var fullView: some View {
     Button {
-      if appAccounts.currentAccount.id == viewModel.appAccount.id,
-        let account = viewModel.account
+      if appAccounts.currentAccount.id == appAccount.id,
+        let account
       {
-        if viewModel.isInSettings {
+        if isInSettings {
           routerPath.navigate(
-            to: .accountSettingsWithAccount(account: account, appAccount: viewModel.appAccount))
+            to: .accountSettingsWithAccount(account: account, appAccount: appAccount))
           HapticManager.shared.fireHaptic(.buttonPress)
         } else {
           isParentPresented = false
@@ -63,21 +115,21 @@ public struct AppAccountView: View {
         var transation = Transaction()
         transation.disablesAnimations = true
         withTransaction(transation) {
-          appAccounts.currentAccount = viewModel.appAccount
+          appAccounts.currentAccount = appAccount
           HapticManager.shared.fireHaptic(.notification(.success))
         }
       }
     } label: {
       HStack {
-        if let account = viewModel.account {
+        if let account {
           ZStack(alignment: .topTrailing) {
             AvatarView(account.avatar)
-            if viewModel.appAccount.id == appAccounts.currentAccount.id {
+            if appAccount.id == appAccounts.currentAccount.id {
               Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.white, .green)
                 .offset(x: 5, y: -5)
-            } else if viewModel.showBadge,
-              let token = viewModel.appAccount.oauthToken,
+            } else if showBadge,
+              let token = appAccount.oauthToken,
               let notificationsCount = preferences.notificationsCount[token],
               notificationsCount > 0
             {
@@ -94,23 +146,23 @@ public struct AppAccountView: View {
           }
         } else {
           ProgressView()
-          Text(viewModel.appAccount.accountName ?? viewModel.acct)
+          Text(backfilledName ?? appAccount.displayAcct(for: nil))
             .font(.scaledSubheadline)
             .foregroundStyle(Color.secondary)
             .padding(.leading, 6)
         }
         VStack(alignment: .leading) {
-          if let account = viewModel.account {
+          if let account {
             EmojiTextApp(.init(stringValue: account.safeDisplayName), emojis: account.emojis)
               .foregroundColor(theme.labelColor)
-            Text("\(account.username)@\(viewModel.appAccount.server)")
+            Text("\(account.username)@\(appAccount.server)")
               .font(.scaledSubheadline)
               .emojiText.size(Font.scaledSubheadlineFont.emojiSize)
               .emojiText.baselineOffset(Font.scaledSubheadlineFont.emojiBaselineOffset)
               .foregroundStyle(Color.secondary)
           }
         }
-        if viewModel.isInSettings {
+        if isInSettings {
           Spacer()
           Image(systemName: "chevron.right")
             .foregroundStyle(.secondary)

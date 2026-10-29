@@ -1,5 +1,6 @@
 import DesignSystem
 import Env
+import Models
 import SwiftUI
 
 @MainActor
@@ -11,7 +12,6 @@ public struct AppAccountsSelectorView: View {
 
   var routerPath: RouterPath
 
-  @State private var accountsViewModel: [AppAccountViewModel] = []
   @State private var isPresented: Bool = false
 
   private let accountCreationEnabled: Bool
@@ -20,16 +20,22 @@ public struct AppAccountsSelectorView: View {
   private let transition: Namespace.ID
 
   private var showNotificationBadge: Bool {
-    accountsViewModel
-      .filter { $0.account?.id != currentAccount.account?.id }
-      .compactMap(\.appAccount.oauthToken)
+    appAccounts.availableAccounts
+      .filter { $0.id != appAccounts.currentAccount.id }
+      .compactMap(\.oauthToken)
       .map { preferences.notificationsCount[$0] ?? 0 }
       .reduce(0, +) > 0
   }
 
+  private var sortedAccounts: [AppAccount] {
+    appAccounts.availableAccounts.sorted {
+      $0.displayAcct(for: nil) < $1.displayAcct(for: nil)
+    }
+  }
+
   private var preferredHeight: CGFloat {
     var baseHeight: CGFloat = 360
-    baseHeight += CGFloat(60 * accountsViewModel.count)
+    baseHeight += CGFloat(60 * appAccounts.availableAccounts.count)
     return baseHeight
   }
 
@@ -54,18 +60,17 @@ public struct AppAccountsSelectorView: View {
         .contentShape(.circle)
     }
     .contextMenu {
-      ForEach(accountsViewModel.sorted { $0.acct < $1.acct }, id: \.appAccount.id) {
-        viewModel in
+      ForEach(sortedAccounts, id: \.id) { appAccount in
         Button {
-          appAccounts.currentAccount = viewModel.appAccount
+          appAccounts.currentAccount = appAccount
         } label: {
-          if appAccounts.currentAccount.id == viewModel.appAccount.id {
-            Label(viewModel.appAccount.server, systemImage: "checkmark.circle.fill")
+          if appAccounts.currentAccount.id == appAccount.id {
+            Label(appAccount.server, systemImage: "checkmark.circle.fill")
               .foregroundStyle(.primary)
-            Text(viewModel.acct)
+            Text(appAccount.displayAcct(for: nil))
           } else {
-            Text(viewModel.appAccount.server)
-            Text(viewModel.acct)
+            Text(appAccount.server)
+            Text(appAccount.displayAcct(for: nil))
           }
         }
         .tint(.primary)
@@ -80,25 +85,13 @@ public struct AppAccountsSelectorView: View {
             .navigationTransition(
               .zoom(sourceID: CurrentAccount.shared.account?.id ?? "", in: transition)
             )
-            .onAppear {
-              refreshAccounts()
-            }
         } else {
           accountsView.presentationDetents([.height(preferredHeight), .large])
             .presentationBackground(.ultraThinMaterial)
             .presentationCornerRadius(16)
-            .onAppear {
-              refreshAccounts()
-            }
         }
       }
     )
-    .onChange(of: currentAccount.account?.id) {
-      refreshAccounts()
-    }
-    .onAppear {
-      refreshAccounts()
-    }
     .accessibilityRepresentation {
       Menu("accessibility.app-account.selector.accounts") {}
         .accessibilityHint("accessibility.app-account.selector.accounts.hint")
@@ -129,9 +122,10 @@ public struct AppAccountsSelectorView: View {
     NavigationStack {
       List {
         Section {
-          ForEach(accountsViewModel.sorted { $0.acct < $1.acct }, id: \.appAccount.id) {
-            viewModel in
-            AppAccountView(viewModel: viewModel, isParentPresented: $isPresented)
+          ForEach(sortedAccounts, id: \.id) { appAccount in
+            AppAccountView(
+              appAccount: appAccount, isInSettings: false, showBadge: true,
+              isParentPresented: $isPresented)
           }
           addAccountButton
             .foregroundStyle(theme.labelColor)
@@ -225,15 +219,6 @@ public struct AppAccountsSelectorView: View {
       }
     } label: {
       Label("settings.app.about", systemImage: "info.circle")
-    }
-  }
-
-  private func refreshAccounts() {
-    accountsViewModel = []
-    for account in appAccounts.availableAccounts {
-      let viewModel: AppAccountViewModel = .init(
-        appAccount: account, isInSettings: false, showBadge: true)
-      accountsViewModel.append(viewModel)
     }
   }
 }
