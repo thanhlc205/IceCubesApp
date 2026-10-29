@@ -4,16 +4,66 @@ import Models
 import NetworkClient
 import SwiftUI
 
+public enum AccountsListMode {
+  case following(accountId: String)
+  case followers(accountId: String)
+  case favoritedBy(statusId: String)
+  case rebloggedBy(statusId: String)
+  case accountsList(accounts: [Account])
+  case blocked, muted
+
+  var title: LocalizedStringKey {
+    switch self {
+    case .following:
+      "account.following"
+    case .followers:
+      "account.followers"
+    case .favoritedBy:
+      "account.favorited-by"
+    case .rebloggedBy:
+      "account.boosted-by"
+    case .accountsList:
+      ""
+    case .blocked:
+      "account.blocked"
+    case .muted:
+      "account.muted"
+    }
+  }
+}
+
 @MainActor
 public struct AccountsListView: View {
   @Environment(Theme.self) private var theme
   @Environment(MastodonClient.self) private var client
   @Environment(CurrentAccount.self) private var currentAccount
-  @State private var viewModel: AccountsListViewModel
+
+  public enum ViewState {
+    public enum PagingState {
+      case hasNextPage, none
+    }
+
+    case loading
+    case display(
+      accounts: [Account],
+      relationships: [Relationship],
+      nextPageState: PagingState)
+    case error(error: Error)
+  }
+
+  private let mode: AccountsListMode
+
+  @State private var state = ViewState.loading
+  @State private var accounts: [Account] = []
+  @State private var relationships: [Relationship] = []
+  @State private var totalCount: Int?
+  @State private var accountId: String?
+  @State private var searchQuery: String = ""
+  @State private var nextPageId: String?
   @State private var didAppear: Bool = false
 
   public init(mode: AccountsListMode) {
-    _viewModel = .init(initialValue: .init(mode: mode))
+    self.mode = mode
   }
 
   public var body: some View {
@@ -26,9 +76,9 @@ public struct AccountsListView: View {
       .toolbar {
         ToolbarItem(placement: .principal) {
           VStack {
-            Text(viewModel.mode.title)
+            Text(mode.title)
               .font(.headline)
-            if let count = viewModel.totalCount {
+            if let count = totalCount {
               Text(String(count))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -36,24 +86,23 @@ public struct AccountsListView: View {
           }
         }
       }
-      .navigationTitle(viewModel.mode.title)
+      .navigationTitle(mode.title)
       .navigationBarTitleDisplayMode(.inline)
       .task {
-        viewModel.client = client
         guard !didAppear else { return }
         didAppear = true
-        await viewModel.fetch()
+        await fetch()
       }
   }
 
   @ViewBuilder
   private var listView: some View {
-    if currentAccount.account?.id == viewModel.accountId {
+    if currentAccount.account?.id == accountId {
       searchableList
     } else {
       standardList
         .refreshable {
-          await viewModel.fetch()
+          await fetch()
         }
     }
   }
@@ -63,18 +112,18 @@ public struct AccountsListView: View {
       listContent
     }
     .searchable(
-      text: $viewModel.searchQuery,
+      text: $searchQuery,
       placement: .navigationBarDrawer(displayMode: .always)
     )
-    .task(id: viewModel.searchQuery) {
-      if !viewModel.searchQuery.isEmpty {
-        await viewModel.search()
+    .task(id: searchQuery) {
+      if !searchQuery.isEmpty {
+        await search()
       }
     }
-    .onChange(of: viewModel.searchQuery) { _, newValue in
+    .onChange(of: searchQuery) { _, newValue in
       if newValue.isEmpty {
         Task {
-          await viewModel.fetch()
+          await fetch()
         }
       }
     }
@@ -88,7 +137,7 @@ public struct AccountsListView: View {
 
   @ViewBuilder
   private var listContent: some View {
-    switch viewModel.state {
+    switch state {
     case .loading:
       ForEach(Account.placeholders()) { _ in
         AccountsListRow(viewModel: .init(account: .placeholder(), relationShip: .placeholder()))
@@ -99,7 +148,7 @@ public struct AccountsListView: View {
           #endif
       }
     case let .display(accounts, relationships, nextPageState):
-      if case .followers = viewModel.mode,
+      if case .followers = mode,
         !currentAccount.followRequests.isEmpty
       {
         Section(
@@ -115,7 +164,7 @@ public struct AccountsListView: View {
               isFollowRequest: true,
               requestUpdated: {
                 Task {
-                  await viewModel.fetch()
+                  await fetch()
                 }
               }
             )
@@ -151,7 +200,7 @@ public struct AccountsListView: View {
       switch nextPageState {
       case .hasNextPage:
         NextPageView {
-          try await viewModel.fetchNextPage()
+          try await fetchNextPage()
         }
         #if !os(visionOS)
           .listRowBackground(theme.primaryBackgroundColor)
@@ -167,6 +216,133 @@ public struct AccountsListView: View {
           .listRowBackground(theme.primaryBackgroundColor)
         #endif
     }
+  }
+}
+
+// MARK: - Loading
+
+extension AccountsListView {
+  private func fetch() async {
+    do {
+      state = .loading
+      let link: LinkHandler?
+      switch mode {
+      case let .followers(accountId):
+        let account: Account = try await client.get(endpoint: Accounts.accounts(id: accountId))
+        totalCount = account.followersCount
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Accounts.followers(
+            id: accountId,
+            maxId: nil))
+      case let .following(accountId):
+        self.accountId = accountId
+        let account: Account = try await client.get(endpoint: Accounts.accounts(id: accountId))
+        totalCount = account.followingCount
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Accounts.following(
+            id: accountId,
+            maxId: nil))
+      case let .rebloggedBy(statusId):
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Statuses.rebloggedBy(
+            id: statusId,
+            maxId: nil))
+      case let .favoritedBy(statusId):
+        (accounts, link) = try await client.getWithLink(
+          endpoint: Statuses.favoritedBy(
+            id: statusId,
+            maxId: nil))
+      case let .accountsList(accounts):
+        self.accounts = accounts
+        link = nil
+
+      case .blocked:
+        (accounts, link) = try await client.getWithLink(endpoint: Accounts.blockList(maxId: nil))
+
+      case .muted:
+        (accounts, link) = try await client.getWithLink(endpoint: Accounts.muteList(maxId: nil))
+      }
+      nextPageId = link?.maxId
+      relationships = try await client.get(
+        endpoint:
+          Accounts.relationships(ids: accounts.map(\.id)))
+      state = .display(
+        accounts: accounts,
+        relationships: relationships,
+        nextPageState: link?.maxId != nil ? .hasNextPage : .none)
+    } catch {}
+  }
+
+  private func fetchNextPage() async throws {
+    guard let nextPageId else { return }
+    let newAccounts: [Account]
+    let link: LinkHandler?
+    switch mode {
+    case let .followers(accountId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Accounts.followers(
+          id: accountId,
+          maxId: nextPageId))
+    case let .following(accountId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Accounts.following(
+          id: accountId,
+          maxId: nextPageId))
+    case let .rebloggedBy(statusId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Statuses.rebloggedBy(
+          id: statusId,
+          maxId: nextPageId))
+    case let .favoritedBy(statusId):
+      (newAccounts, link) = try await client.getWithLink(
+        endpoint: Statuses.favoritedBy(
+          id: statusId,
+          maxId: nextPageId))
+    case .accountsList:
+      newAccounts = []
+      link = nil
+
+    case .blocked:
+      (newAccounts, link) = try await client.getWithLink(endpoint: Accounts.blockList(maxId: nextPageId))
+
+    case .muted:
+      (newAccounts, link) = try await client.getWithLink(endpoint: Accounts.muteList(maxId: nextPageId))
+    }
+
+    accounts.append(contentsOf: newAccounts)
+    let newRelationships: [Relationship] =
+      try await client.get(endpoint: Accounts.relationships(ids: newAccounts.map(\.id)))
+
+    relationships.append(contentsOf: newRelationships)
+    self.nextPageId = link?.maxId
+    state = .display(
+      accounts: accounts,
+      relationships: relationships,
+      nextPageState: link?.maxId != nil ? .hasNextPage : .none)
+  }
+
+  private func search() async {
+    guard !searchQuery.isEmpty else { return }
+    do {
+      state = .loading
+      try await Task.sleep(for: .milliseconds(250))
+      var results: SearchResults = try await client.get(
+        endpoint: Search.search(
+          query: searchQuery,
+          type: .accounts,
+          offset: nil,
+          following: true),
+        forceVersion: .v2)
+      let relationships: [Relationship] =
+        try await client.get(endpoint: Accounts.relationships(ids: results.accounts.map(\.id)))
+      results.relationships = relationships
+      withAnimation {
+        state = .display(
+          accounts: results.accounts,
+          relationships: relationships,
+          nextPageState: .none)
+      }
+    } catch {}
   }
 }
 
