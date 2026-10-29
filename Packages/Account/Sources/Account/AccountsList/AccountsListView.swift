@@ -57,7 +57,7 @@ public struct AccountsListView: View {
   @State private var totalCount: Int?
   @State private var accountId: String?
   @State private var searchQuery: String = ""
-  @State private var didAppear: Bool = false
+  @State private var isSearching: Bool = false
 
   public init(mode: AccountsListMode) {
     self.mode = mode
@@ -86,8 +86,7 @@ public struct AccountsListView: View {
       .navigationTitle(mode.title)
       .navigationBarTitleDisplayMode(.inline)
       .task {
-        guard !didAppear else { return }
-        didAppear = true
+        guard case .loading = state else { return }
         await fetch()
       }
   }
@@ -115,13 +114,9 @@ public struct AccountsListView: View {
     .task(id: searchQuery) {
       if !searchQuery.isEmpty {
         await search()
-      }
-    }
-    .onChange(of: searchQuery) { _, newValue in
-      if newValue.isEmpty {
-        Task {
-          await fetch()
-        }
+      } else if isSearching {
+        isSearching = false
+        await fetch()
       }
     }
   }
@@ -180,8 +175,10 @@ public struct AccountsListView: View {
           )
           .listRowSeparator(.hidden)
         } else {
+          let relationshipsById = Dictionary(
+            relationships.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
           ForEach(accounts) { account in
-            if let relationship = relationships.first(where: { $0.id == account.id }) {
+            if let relationship = relationshipsById[account.id] {
               AccountsListRow(
                 viewModel: .init(
                   account: account,
@@ -208,10 +205,22 @@ public struct AccountsListView: View {
       }
 
     case let .error(error):
-      Text(error.localizedDescription)
-        #if !os(visionOS)
-          .listRowBackground(theme.primaryBackgroundColor)
-        #endif
+      VStack(spacing: 12) {
+        Text(error.localizedDescription)
+        Button("Retry") {
+          Task {
+            if searchQuery.isEmpty {
+              await fetch()
+            } else {
+              await search()
+            }
+          }
+        }
+      }
+      .frame(maxWidth: .infinity)
+      #if !os(visionOS)
+        .listRowBackground(theme.primaryBackgroundColor)
+      #endif
     }
   }
 
@@ -242,7 +251,10 @@ public struct AccountsListView: View {
 
   private func fetch() async {
     do {
-      state = .loading
+      if case .display = state {
+      } else {
+        state = .loading
+      }
       switch mode {
       case let .followers(id):
         let account: Account = try await client.get(endpoint: Accounts.accounts(id: id))
@@ -255,8 +267,11 @@ public struct AccountsListView: View {
         break
       }
       let (accounts, link) = try await fetchPage(maxId: nil)
-      let relationships: [Relationship] = try await client.get(
-        endpoint: Accounts.relationships(ids: accounts.map(\.id)))
+      let relationships: [Relationship] =
+        accounts.isEmpty
+        ? []
+        : try await client.get(endpoint: Accounts.relationships(ids: accounts.map(\.id)))
+      guard !Task.isCancelled else { return }
       state = .display(
         accounts: accounts,
         relationships: relationships,
@@ -270,8 +285,12 @@ public struct AccountsListView: View {
   private func fetchNextPage(maxId: String) async throws {
     let (newAccounts, link) = try await fetchPage(maxId: maxId)
     let newRelationships: [Relationship] =
-      try await client.get(endpoint: Accounts.relationships(ids: newAccounts.map(\.id)))
-    guard case let .display(accounts, relationships, _) = state else { return }
+      newAccounts.isEmpty
+      ? []
+      : try await client.get(endpoint: Accounts.relationships(ids: newAccounts.map(\.id)))
+    guard case let .display(accounts, relationships, .hasNextPage(currentMaxId)) = state,
+      currentMaxId == maxId
+    else { return }
     state = .display(
       accounts: accounts + newAccounts,
       relationships: relationships + newRelationships,
@@ -282,6 +301,7 @@ public struct AccountsListView: View {
     guard !searchQuery.isEmpty else { return }
     do {
       try await Task.sleep(for: .milliseconds(250))
+      isSearching = true
       state = .loading
       let results: SearchResults = try await client.get(
         endpoint: Search.search(
@@ -292,6 +312,7 @@ public struct AccountsListView: View {
         forceVersion: .v2)
       let relationships: [Relationship] =
         try await client.get(endpoint: Accounts.relationships(ids: results.accounts.map(\.id)))
+      guard !Task.isCancelled else { return }
       withAnimation {
         state = .display(
           accounts: results.accounts,
