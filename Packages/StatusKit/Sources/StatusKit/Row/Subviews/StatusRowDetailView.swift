@@ -18,8 +18,8 @@ struct StatusRowDetailView: View {
       Divider()
       HStack {
         Group {
-          Text(viewModel.status.createdAt.asDate, style: .date) + Text("status.summary.at-time")
-            + Text(viewModel.status.createdAt.asDate, style: .time) + Text("  ·")
+          let createdAt = viewModel.status.createdAt.asDate
+          Text("\(createdAt, style: .date)\(Text("status.summary.at-time"))\(createdAt, style: .time)\(Text("  ·"))")
           Image(systemName: viewModel.status.visibility.iconName)
             .accessibilityHidden(true)
         }.accessibilityElement(children: .combine)
@@ -46,8 +46,9 @@ struct StatusRowDetailView: View {
       if let editedAt = viewModel.status.editedAt {
         Divider()
         HStack {
-          Text("status.summary.edited-time") + Text(editedAt.asDate, style: .date)
-            + Text("status.summary.at-time") + Text(editedAt.asDate, style: .time)
+          Text(
+            "\(Text("status.summary.edited-time"))\(editedAt.asDate, style: .date)\(Text("status.summary.at-time"))\(editedAt.asDate, style: .time)"
+          )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onTapGesture {

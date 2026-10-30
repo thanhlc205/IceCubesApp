@@ -17,29 +17,28 @@ nonisolated func NotificationRowAppendTextView(notification: ConsolidatedNotific
       // For other types (like follow), use the accounts count
       othersCount = notification.accounts.count - 1
     }
-    return Text("notifications-others-count \(othersCount)")
+    let others = Text("notifications-others-count \(othersCount)")
       .font(.subheadline)
       .fontWeight(.regular)
-      + Text(" ⸱ ")
-      .font(.footnote)
-      .fontWeight(.regular)
-      .foregroundStyle(.secondary)
-      + Text(notification.createdAt.relativeFormatted)
-      .font(.footnote)
-      .fontWeight(.regular)
-      .foregroundStyle(.secondary)
+    return Text("\(others)\(separator)\(createdAt(of: notification))")
   } else {
-    return Text(" ")
-      + Text(notification.type.label(count: 1))
+    let label = Text(notification.type.label(count: 1))
       .font(.subheadline)
       .fontWeight(.regular)
-      + Text(" ⸱ ")
-      .font(.footnote)
-      .fontWeight(.regular)
-      .foregroundStyle(.secondary)
-      + Text(notification.createdAt.relativeFormatted)
-      .font(.footnote)
-      .fontWeight(.regular)
-      .foregroundStyle(.secondary)
+    return Text(" \(label)\(separator)\(createdAt(of: notification))")
   }
+}
+
+private nonisolated var separator: Text {
+  Text(" ⸱ ")
+    .font(.footnote)
+    .fontWeight(.regular)
+    .foregroundStyle(.secondary)
+}
+
+private nonisolated func createdAt(of notification: ConsolidatedNotification) -> Text {
+  Text(notification.createdAt.relativeFormatted)
+    .font(.footnote)
+    .fontWeight(.regular)
+    .foregroundStyle(.secondary)
 }

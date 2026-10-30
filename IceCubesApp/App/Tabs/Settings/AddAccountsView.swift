@@ -225,9 +225,9 @@ struct AddAccountView: View {
                     .font(.scaledHeadline)
                     .foregroundColor(.primary)
                   Spacer()
-                  (Text("instance.list.users-\(formatAsNumber(instance.users))")
-                    + Text("  ⸱  ")
-                    + Text("instance.list.posts-\(formatAsNumber(instance.statuses))"))
+                  let users = Text("instance.list.users-\(formatAsNumber(instance.users))")
+                  let posts = Text("instance.list.posts-\(formatAsNumber(instance.statuses))")
+                  Text("\(users)  ⸱  \(posts)")
                     .foregroundStyle(theme.tintColor)
                 }
                 .padding(.bottom, 5)
