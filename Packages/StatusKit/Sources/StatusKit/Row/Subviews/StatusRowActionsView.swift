@@ -307,7 +307,7 @@ struct StatusRowActionsView: View {
     .preferredColorScheme(theme.selectedScheme == .dark ? .dark : .light)
     .foregroundColor(theme.labelColor)
     .background(theme.primaryBackgroundColor)
-    .frame(width: sceneDelegate.windowWidth - 12)
+    .frame(width: max(sceneDelegate.windowWidth - 12, 0))
     .tint(theme.tintColor)
   }
 

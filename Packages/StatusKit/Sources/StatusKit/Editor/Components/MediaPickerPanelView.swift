@@ -263,6 +263,7 @@
     let size: CGFloat
     let onSelect: (PHAsset) async -> Void
 
+    @Environment(\.displayScale) private var displayScale
     @State private var image: UIImage?
 
     var body: some View {
@@ -300,8 +301,7 @@
       options.deliveryMode = .highQualityFormat
       options.isSynchronous = false
 
-      let scale = UIScreen.main.scale
-      let targetSize = CGSize(width: size * scale, height: size * scale)
+      let targetSize = CGSize(width: size * displayScale, height: size * displayScale)
 
       let result = await withCheckedContinuation { continuation in
         var didResume = false

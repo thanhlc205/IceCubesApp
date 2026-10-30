@@ -124,8 +124,6 @@ extension StatusEditor {
       }
       let outputURL = URL.temporaryDirectory.appending(
         path: "\(UUID().uuidString).\(url.pathExtension)")
-      exportSession.outputURL = outputURL
-      exportSession.outputFileType = .mp4
       exportSession.shouldOptimizeForNetworkUse = true
       do {
         try await exportSession.export(to: outputURL, as: .mp4)

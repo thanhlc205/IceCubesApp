@@ -61,12 +61,9 @@ public struct AvatarView: View {
   }
 }
 
-struct AvatarView_Previews: PreviewProvider {
-  static var previews: some View {
-    PreviewWrapper()
-      .padding()
-      .previewLayout(.sizeThatFits)
-  }
+#Preview(traits: .sizeThatFitsLayout) {
+  PreviewWrapper()
+    .padding()
 }
 
 struct PreviewWrapper: View {
