@@ -84,17 +84,15 @@ struct AccountDetailHeaderView: View {
 
 }
 
-struct AccountDetailHeaderView_Previews: PreviewProvider {
-  static var previews: some View {
-    AccountDetailHeaderView(
-      account: .placeholder(),
-      relationship: nil,
-      fields: [],
-      followButtonViewModel: .constant(nil),
-      translation: .constant(nil),
-      isLoadingTranslation: .constant(false),
-      isCurrentUser: false,
-      accountId: "123",
-      scrollViewProxy: nil)
-  }
+#Preview {
+  AccountDetailHeaderView(
+    account: .placeholder(),
+    relationship: nil,
+    fields: [],
+    followButtonViewModel: .constant(nil),
+    translation: .constant(nil),
+    isLoadingTranslation: .constant(false),
+    isCurrentUser: false,
+    accountId: "123",
+    scrollViewProxy: nil)
 }

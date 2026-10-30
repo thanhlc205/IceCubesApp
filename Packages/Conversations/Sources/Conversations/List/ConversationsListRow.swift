@@ -237,7 +237,7 @@ struct ConversationsListRow: View {
       ForEach(lastStatus.content.links) { link in
         switch link.type {
         case .url:
-          if UIApplication.shared.canOpenURL(link.url) {
+          if link.url.isOpenableLink {
             Button("accessibility.tabs.timeline.content-link-\(link.title)") {
               HapticManager.shared.fireHaptic(.notification(.success))
               _ = routerPath.handle(url: link.url)

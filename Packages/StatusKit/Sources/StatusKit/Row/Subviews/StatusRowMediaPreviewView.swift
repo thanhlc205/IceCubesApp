@@ -366,10 +366,8 @@ private enum DisplayType {
   }
 }
 
-struct StatusRowMediaPreviewView_Previews: PreviewProvider {
-  static var previews: some View {
-    WrapperForPreview()
-  }
+#Preview {
+  WrapperForPreview()
 }
 
 struct WrapperForPreview: View {

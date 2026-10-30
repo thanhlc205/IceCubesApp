@@ -146,9 +146,7 @@ struct TranslationSettingsView: View {
   }
 }
 
-struct TranslationSettingsView_Previews: PreviewProvider {
-  static var previews: some View {
-    TranslationSettingsView()
-      .environment(UserPreferences.shared)
-  }
+#Preview {
+  TranslationSettingsView()
+    .environment(UserPreferences.shared)
 }
