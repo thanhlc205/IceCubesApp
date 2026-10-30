@@ -34,38 +34,36 @@ struct StatusRowAccessibilityLabel {
     if let filter {
       switch filter.filterAction {
       case .warn:
-        Text("status.filter.filtered-by-\(filter.title)")
+        return Text("status.filter.filtered-by-\(filter.title)")
       case .hide:
-        Text("")
+        return Text("")
       }
-    } else {
-      userNamePreamble()
-        + Text(
-          hasSpoiler
-            ? viewModel.finalStatus.spoilerText.asRawText
-            : viewModel.finalStatus.content.asRawText
-        )
-        + Text(
-          hasSpoiler
-            ? "status.editor.spoiler"
-            : ""
-        ) + Text(", ") + pollText() + imageAltText()
-        + Text(viewModel.finalStatus.createdAt.relativeFormatted) + Text(", ")
-        + Text("status.summary.n-replies \(viewModel.finalStatus.repliesCount)") + Text(", ")
-        + Text("status.summary.n-boosts \(viewModel.finalStatus.reblogsCount)") + Text(", ")
-        + Text("status.summary.n-favorites \(viewModel.finalStatus.favouritesCount)")
     }
+
+    let status = viewModel.finalStatus
+    let content = Text(hasSpoiler ? status.spoilerText.asRawText : status.content.asRawText)
+    let spoilerLabel = Text(hasSpoiler ? "status.editor.spoiler" : "")
+    let createdAt = Text(status.createdAt.relativeFormatted)
+    let replies = Text("status.summary.n-replies \(status.repliesCount)")
+    let boosts = Text("status.summary.n-boosts \(status.reblogsCount)")
+    let favorites = Text("status.summary.n-favorites \(status.favouritesCount)")
+
+    return Text(
+      "\(userNamePreamble())\(content)\(spoilerLabel), \(pollText())\(imageAltText())\(createdAt), \(replies), \(boosts), \(favorites)"
+    )
   }
 
   func userNamePreamble() -> Text {
     switch (isReply, isBoost) {
     case (true, false):
-      Text("accessibility.status.a-replied-to-\(finalUserDisplayName())") + Text(" ")
+      let repliedTo = Text("accessibility.status.a-replied-to-\(finalUserDisplayName())")
+      return Text("\(repliedTo) ")
     case (_, true):
-      Text("accessibility.status.a-boosted-b-\(userDisplayName())-\(finalUserDisplayName())")
-        + Text(", ")
+      let boosted = Text(
+        "accessibility.status.a-boosted-b-\(userDisplayName())-\(finalUserDisplayName())")
+      return Text("\(boosted), ")
     default:
-      Text(userDisplayName()) + Text(", ")
+      return Text("\(Text(userDisplayName())), ")
     }
   }
 
@@ -86,17 +84,20 @@ struct StatusRowAccessibilityLabel {
       .compactMap(\.description)
 
     if descriptions.count == 1 {
-      return Text("accessibility.image.alt-text-\(descriptions[0])") + Text(", ")
+      let altText = Text("accessibility.image.alt-text-\(descriptions[0])")
+      return Text("\(altText), ")
     } else if descriptions.count > 1 {
-      return Text("accessibility.image.alt-text-\(descriptions[0])") + Text(", ")
-        + Text("accessibility.image.alt-text-more.label") + Text(", ")
+      let altText = Text("accessibility.image.alt-text-\(descriptions[0])")
+      let more = Text("accessibility.image.alt-text-more.label")
+      return Text("\(altText), \(more), ")
     } else if viewModel.finalStatus.mediaAttachments.isEmpty == false {
       let differentTypes = Set(
         viewModel.finalStatus.mediaAttachments.compactMap(\.localizedTypeDescription)
       ).sorted()
-      return Text(
+      let containsMedia = Text(
         "accessibility.status.contains-media.label-\(ListFormatter.localizedString(byJoining: differentTypes))"
-      ) + Text(", ")
+      )
+      return Text("\(containsMedia), ")
     } else {
       return Text("")
     }
@@ -118,10 +119,13 @@ struct StatusRowAccessibilityLabel {
           ? Int(round(Double(option.votesCount!) / Double(poll.safeVotersCount) * 100))
           : 0
 
-        text =
-          text + Text(selected ? "accessibility.status.poll.selected.label" : "") + Text(", ")
-          + Text("accessibility.status.poll.option-prefix-\(index + 1)-of-\(poll.options.count)")
-          + Text(", ") + Text(option.title) + Text(showPercentage ? ", \(percentage)%. " : ". ")
+        let selectedLabel = Text(selected ? "accessibility.status.poll.selected.label" : "")
+        let optionPrefix = Text(
+          "accessibility.status.poll.option-prefix-\(index + 1)-of-\(poll.options.count)")
+        let optionTitle = Text(option.title)
+        let optionPercentage = Text(showPercentage ? ", \(percentage)%. " : ". ")
+
+        text = Text("\(text)\(selectedLabel), \(optionPrefix), \(optionTitle)\(optionPercentage)")
       }
     }
     return Text("")

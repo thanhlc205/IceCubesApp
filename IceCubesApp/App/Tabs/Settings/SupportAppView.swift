@@ -181,18 +181,20 @@ struct SupportAppView: View {
       } else if let subscription {
         HStack {
           if customerInfo?.entitlements["Supporter"]?.isActive == true {
-            Text(Image(systemName: "checkmark.seal.fill"))
+            let seal = Text(Image(systemName: "checkmark.seal.fill"))
               .foregroundColor(theme.tintColor)
               .baselineOffset(-1)
-              + Text("settings.support.supporter.subscribed")
+            let subscribed = Text("settings.support.supporter.subscribed")
               .font(.scaledSubheadline)
+            Text("\(seal)\(subscribed)")
           } else {
             VStack(alignment: .leading) {
-              Text(Image(systemName: "checkmark.seal.fill"))
+              let seal = Text(Image(systemName: "checkmark.seal.fill"))
                 .foregroundColor(theme.tintColor)
                 .baselineOffset(-1)
-                + Text(Tip.supporter.title)
+              let title = Text(Tip.supporter.title)
                 .font(.scaledSubheadline)
+              Text("\(seal)\(title)")
               Text(Tip.supporter.subtitle)
                 .font(.scaledFootnote)
                 .foregroundStyle(.secondary)

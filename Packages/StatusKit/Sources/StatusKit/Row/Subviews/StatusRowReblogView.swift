@@ -16,9 +16,7 @@ struct StatusRowReblogView: View {
       }
       .accessibilityElement(children: .combine)
       .accessibilityLabel(
-        Text("\(viewModel.status.account.safeDisplayName)")
-          + Text(" ")
-          + Text("status.row.was-boosted")
+        Text("\(viewModel.status.account.safeDisplayName) \(Text("status.row.was-boosted"))")
       )
       .font(.scaledFootnote)
       .emojiText.size(Font.scaledFootnoteFont.emojiSize)

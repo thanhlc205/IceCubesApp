@@ -109,9 +109,9 @@ struct AddRemoteTimelineView: View {
                 .font(.scaledBody)
                 .foregroundStyle(Color.secondary)
 
-              (Text("instance.list.users-\(instance.users)")
-                + Text("  ⸱  ")
-                + Text("instance.list.posts-\(instance.statuses)"))
+              let users = Text("instance.list.users-\(instance.users)")
+              let posts = Text("instance.list.posts-\(instance.statuses)")
+              Text("\(users)  ⸱  \(posts)")
                 .font(.scaledFootnote)
                 .foregroundStyle(Color.secondary)
             }

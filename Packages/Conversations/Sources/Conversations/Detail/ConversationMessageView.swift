@@ -90,7 +90,7 @@ struct ConversationMessageView: View {
             Spacer()
           }
           Group {
-            Text(message.createdAt.shortDateFormatted) + Text(" ")
+            Text("\(message.createdAt.shortDateFormatted) ")
             Text(message.createdAt.asDate, style: .time)
           }
           .font(.scaledFootnote)
