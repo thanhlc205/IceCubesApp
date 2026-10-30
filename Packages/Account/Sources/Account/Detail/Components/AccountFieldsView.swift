@@ -100,7 +100,7 @@ private struct ConditionalUserDefinedFieldAccessibilityActionModifier: ViewModif
   let routerPath: RouterPath
 
   func body(content: Content) -> some View {
-    if let url = URL(string: field.value.asRawText), UIApplication.shared.canOpenURL(url) {
+    if let url = URL(string: field.value.asRawText), url.isWebLink {
       content
         .accessibilityAction {
           let _ = routerPath.handle(url: url)

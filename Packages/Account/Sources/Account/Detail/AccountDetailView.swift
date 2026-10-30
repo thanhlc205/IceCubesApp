@@ -268,10 +268,8 @@ extension View {
   }
 }
 
-struct AccountDetailView_Previews: PreviewProvider {
-  static var previews: some View {
-    AccountDetailView(account: .placeholder())
-  }
+#Preview {
+  AccountDetailView(account: .placeholder())
 }
 
 // MARK: - Data Fetching

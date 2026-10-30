@@ -99,18 +99,16 @@ struct EditTagGroupView: View {
   }
 }
 
-struct AddTagGroupView_Previews: PreviewProvider {
-  static var previews: some View {
-    let container = try? ModelContainer(for: TagGroup.self, configurations: ModelConfiguration())
+#Preview {
+  let container = try? ModelContainer(for: TagGroup.self, configurations: ModelConfiguration())
 
-    // need to use `sheet` to show `symbolsSuggestionView` in preview
-    return Text(verbatim: "parent view for EditTagGroupView")
-      .sheet(isPresented: .constant(true)) {
-        EditTagGroupView()
-          .withEnvironments()
-          .modelContainer(container!)
-      }
-  }
+  // need to use `sheet` to show `symbolsSuggestionView` in preview
+  Text(verbatim: "parent view for EditTagGroupView")
+    .sheet(isPresented: .constant(true)) {
+      EditTagGroupView()
+        .withEnvironments()
+        .modelContainer(container!)
+    }
 }
 
 private struct TitleInputView: View {
