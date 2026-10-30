@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 import Models
 import NetworkClient
@@ -92,13 +91,7 @@ import SwiftUI
         }
         sharedDefault.removeObject(forKey: "always_use_deepl")
       }
-      #if canImport(_Translation_SwiftUI)
-        if #unavailable(iOS 17.4),
-          preferredTranslationType == .useApple
-        {
-          preferredTranslationType = .useServerIfPossible
-        }
-      #else
+      #if !canImport(_Translation_SwiftUI)
         if preferredTranslationType == .useApple {
           preferredTranslationType = .useServerIfPossible
         }

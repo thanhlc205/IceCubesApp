@@ -40,7 +40,7 @@ extension StatusEditor {
               generateButton
             }
             #if canImport(_Translation_SwiftUI)
-              if #available(iOS 17.4, *), !imageDescription.isEmpty {
+              if !imageDescription.isEmpty {
                 translateButton
               }
             #endif
@@ -77,7 +77,7 @@ extension StatusEditor {
         .navigationTitle("status.editor.media.edit-image")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-          ToolbarItem(placement: .navigationBarTrailing) {
+          ToolbarItem(placement: .topBarTrailing) {
             Button {
               if !imageDescription.isEmpty {
                 isUpdating = true

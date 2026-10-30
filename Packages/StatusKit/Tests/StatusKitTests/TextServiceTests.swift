@@ -207,7 +207,7 @@ final class TextServiceTests: XCTestCase {
           expectation.fulfill()
           return
         }
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        try? await Task.sleep(for: .milliseconds(50))
       }
     }
     await fulfillment(of: [expectation], timeout: 3.0)

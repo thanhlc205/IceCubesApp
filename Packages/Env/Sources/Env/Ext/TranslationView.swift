@@ -8,11 +8,7 @@ import SwiftUI
       #if targetEnvironment(macCatalyst) || os(visionOS)
         return self
       #else
-        if #available(iOS 17.4, *) {
-          return self.translationPresentation(isPresented: isPresented, text: text)
-        } else {
-          return self
-        }
+        return self.translationPresentation(isPresented: isPresented, text: text)
       #endif
     }
   }

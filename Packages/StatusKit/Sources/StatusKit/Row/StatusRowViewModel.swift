@@ -413,9 +413,7 @@ import SwiftUI
 
     var hasShown = false
     #if canImport(_Translation_SwiftUI)
-      if translation == nil,
-        #available(iOS 17.4, *)
-      {
+      if translation == nil {
         showAppleTranslation = true
         hasShown = true
       }

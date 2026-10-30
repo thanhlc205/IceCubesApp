@@ -303,7 +303,7 @@ public struct EditAccountView: View {
           TextField("account.edit.metadata-value-placeholder", text: $field.value)
             .emojiText.size(Font.scaledBodyFont.emojiSize)
             .emojiText.baselineOffset(Font.scaledBodyFont.emojiBaselineOffset)
-            .foregroundColor(theme.tintColor)
+            .foregroundStyle(theme.tintColor)
         }
       }
       .onMove(perform: { indexSet, newOffset in
@@ -319,7 +319,7 @@ public struct EditAccountView: View {
           }
         } label: {
           Text("account.edit.add-metadata-button")
-            .foregroundColor(theme.tintColor)
+            .foregroundStyle(theme.tintColor)
         }
       }
     }
@@ -332,7 +332,7 @@ public struct EditAccountView: View {
   private var toolbarContent: some ToolbarContent {
     CancelToolbarItem()
 
-    ToolbarItem(placement: .navigationBarTrailing) {
+    ToolbarItem(placement: .topBarTrailing) {
       Button {
         Task {
           if await save() {

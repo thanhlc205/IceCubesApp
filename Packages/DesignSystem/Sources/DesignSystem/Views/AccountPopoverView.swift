@@ -46,7 +46,7 @@ struct AccountPopoverView: View {
 
         EmojiTextApp(.init(stringValue: account.safeDisplayName), emojis: account.emojis)
           .font(.headline)
-          .foregroundColor(theme.labelColor)
+          .foregroundStyle(theme.labelColor)
           .emojiText.size(Font.scaledHeadlineFont.emojiSize)
           .emojiText.baselineOffset(Font.scaledHeadlineFont.emojiBaselineOffset)
           .accessibilityAddTraits(.isHeader)
@@ -81,7 +81,7 @@ struct AccountPopoverView: View {
     .onAppear {
       toggleTask.cancel()
       toggleTask = Task {
-        try? await Task.sleep(nanoseconds: NSEC_PER_SEC * 2)
+        try? await Task.sleep(for: .seconds(2))
         guard !Task.isCancelled else { return }
         if autoDismiss {
           showPopup = false
@@ -91,7 +91,7 @@ struct AccountPopoverView: View {
     .onHover { hovering in
       toggleTask.cancel()
       toggleTask = Task {
-        try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 2)
+        try? await Task.sleep(for: .milliseconds(500))
         guard !Task.isCancelled else { return }
         if hovering {
           autoDismiss = false
@@ -110,7 +110,7 @@ struct AccountPopoverView: View {
     VStack {
       Text(count, format: .number.notation(.compactName))
         .font(.scaledHeadline)
-        .foregroundColor(theme.tintColor)
+        .foregroundStyle(theme.tintColor)
         .overlay(alignment: .trailing) {
           if needsBadge {
             Circle()
@@ -176,7 +176,7 @@ public struct AccountPopoverModifier: ViewModifier {
           if hovering {
             toggleTask.cancel()
             toggleTask = Task {
-              try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 2)
+              try? await Task.sleep(for: .milliseconds(500))
               guard !Task.isCancelled else { return }
               if !showPopup {
                 showPopup = true
