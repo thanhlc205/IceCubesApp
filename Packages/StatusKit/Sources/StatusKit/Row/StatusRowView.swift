@@ -81,7 +81,7 @@ public struct StatusRowView: View {
               theme.avatarPosition == .leading
             {
               AvatarView(viewModel.finalStatus.account.avatar)
-                .accessibility(addTraits: .isButton)
+                .accessibilityAddTraits(.isButton)
                 .contentShape(Circle())
                 .hoverEffect()
                 .onTapGesture {

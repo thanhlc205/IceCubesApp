@@ -1,4 +1,3 @@
-import Combine
 import DesignSystem
 import Env
 import Models
@@ -88,7 +87,7 @@ struct DisplaySettingsView: View {
         .allowsHitTesting(false)
         .padding(.layoutPadding)
         .background(theme.primaryBackgroundColor)
-        .cornerRadius(8)
+        .clipShape(.rect(cornerRadius: 8))
         .padding(.horizontal, .layoutPadding)
         .padding(.top, .layoutPadding)
         .background(theme.secondaryBackgroundColor)

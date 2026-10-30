@@ -153,7 +153,7 @@ public struct AppAccountsSelectorView: View {
       .navigationTitle("settings.section.accounts")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: .topBarTrailing) {
           if #available(iOS 26.0, *) {
             Button {
               isPresented.toggle()

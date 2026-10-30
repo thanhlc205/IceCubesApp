@@ -48,7 +48,7 @@ public struct StatusEditHistoryView: View {
         }.listRowBackground(theme.primaryBackgroundColor)
       }
       .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: .topBarTrailing) {
           Button("action.done", action: { dismiss() })
         }
       }

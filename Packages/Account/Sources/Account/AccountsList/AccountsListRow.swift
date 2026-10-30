@@ -1,4 +1,3 @@
-import Combine
 import AppAccount
 import DesignSystem
 import EmojiText
@@ -75,7 +74,7 @@ public struct AccountsListRow: View {
           HStack(spacing: 2) {
             Image(systemName: "checkmark.seal")
               .font(.scaledFootnote)
-              .foregroundColor(.green)
+              .foregroundStyle(.green)
 
             EmojiTextApp(field.value, emojis: viewModel.account.emojis)
               .font(.scaledFootnote)
