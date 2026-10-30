@@ -353,7 +353,7 @@ public struct StatusRowView: View {
     ForEach(viewModel.finalStatus.content.links) { link in
       switch link.type {
       case .url:
-        if link.url.isWebLink {
+        if link.url.isOpenableLink {
           Button("accessibility.tabs.timeline.content-link-\(link.title)") {
             HapticManager.shared.fireHaptic(.notification(.success))
             _ = viewModel.routerPath.handle(url: link.url)

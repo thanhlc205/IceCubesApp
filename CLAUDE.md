@@ -25,7 +25,7 @@ mcp__XcodeBuildMCP__build_sim_name_proj projectPath: "/Users/thomas/Documents/De
   # Then run any package test scheme
   mcp__XcodeBuildMCP__test_sim scheme: "AccountTests"
   mcp__XcodeBuildMCP__test_sim scheme: "ModelsTests"
-  mcp__XcodeBuildMCP__test_sim scheme: "NetworkClientTests"
+  mcp__XcodeBuildMCP__test_sim scheme: "NetworkTests"
   mcp__XcodeBuildMCP__test_sim scheme: "TimelineTests"
   mcp__XcodeBuildMCP__test_sim scheme: "EnvTests"
   ```
