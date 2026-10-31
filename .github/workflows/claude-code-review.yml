@@ -49,7 +49,6 @@ jobs:
             5. Finish with one summary comment via `gh pr comment ${{ github.event.pull_request.number }} --body "..."`. If you found no issues, say so in one or two sentences.
 
             Be concise and only report issues you are confident about.
-          show_full_output: true
           claude_args: >-
             --allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),mcp__github_inline_comment__create_inline_comment"
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
