@@ -93,3 +93,6 @@ IceCubesApp.xcconfig
 *.resolved
 buildServer.json
 /.playwright-mcp
+
+# MobileBuildMCP
+.mobilebuildmcp/
