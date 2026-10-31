@@ -223,11 +223,11 @@ public struct HTMLString: Codable, Equatable, Hashable, @unchecked Sendable {
         if let className = try? node.attr("class"), className == "quote-inline" {
           return
         }
-        if asMarkdown.count > 0 && !skipParagraph {
+        if !asMarkdown.isEmpty && !skipParagraph {
           asMarkdown += "\n\n"
         }
       } else if node.nodeName() == "br" {
-        if asMarkdown.count > 0 {  // ignore first opening <br>
+        if !asMarkdown.isEmpty {  // ignore first opening <br>
           asMarkdown += "\n"
         }
         if (indent ?? 0) > 0 {
