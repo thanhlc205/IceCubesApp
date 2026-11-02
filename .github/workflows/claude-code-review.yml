@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, ready_for_review, reopened]
+    types: [opened, synchronize, ready_for_review, reopened]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
@@ -10,9 +10,14 @@ on:
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
 
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   claude-review:
-    # Skip draft PRs; ready_for_review triggers the review once the draft is published
+    # Skip draft PRs; ready_for_review triggers the review once the draft is published,
+    # and synchronize re-reviews on every new commit pushed to a non-draft PR
     if: github.event.pull_request.draft == false
 
     # Optional: Filter by PR author
