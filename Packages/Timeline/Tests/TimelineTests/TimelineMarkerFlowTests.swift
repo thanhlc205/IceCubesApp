@@ -9,15 +9,18 @@ import Testing
 actor ScriptedStatusFetcher: TimelineStatusFetching {
   private let pages: [String: [Status]]
   private let olderPage: [Status]
+  private let olderPageDelay: Swift.Duration
   private var failsNextPage = false
 
-  init(pages: [String: [Status]], olderPage: [Status] = []) {
+  // `Env` has its own `Duration`, hence the qualified name.
+  init(pages: [String: [Status]], olderPage: [Status] = [], olderPageDelay: Swift.Duration = .zero) {
     self.pages = pages
     self.olderPage = olderPage
+    self.olderPageDelay = olderPageDelay
   }
 
-  func failNextPages() {
-    failsNextPage = true
+  func failNextPages(_ fails: Bool = true) {
+    failsNextPage = fails
   }
 
   func fetchFirstPage(client: MastodonClient?, timeline: TimelineFilter) async throws -> [Status] {
@@ -34,6 +37,8 @@ actor ScriptedStatusFetcher: TimelineStatusFetching {
     client: MastodonClient?, timeline: TimelineFilter, lastId: String, offset: Int
   ) async throws -> [Status] {
     if failsNextPage { throw URLError(.notConnectedToInternet) }
+    // A cancelled sleep ends early, so a cancelled load does not hold the test up.
+    if olderPageDelay > .zero { try? await Task.sleep(for: olderPageDelay) }
     return olderPage
   }
 }
@@ -122,11 +127,12 @@ final class MarkerHarness {
   let otherDevice = post("250")
   let older = [post("249"), post("248")]
 
-  init(serverClockOffset: TimeInterval = 0) {
+  init(serverClockOffset: TimeInterval = 0, olderPageDelay: Swift.Duration = .zero) {
     markers = RecordingMarkerFetcher(
       statuses: home + local + [otherDevice], serverClockOffset: serverClockOffset)
     statuses = ScriptedStatusFetcher(
-      pages: [TimelineFilter.home.id: home, TimelineFilter.local.id: local], olderPage: older)
+      pages: [TimelineFilter.home.id: home, TimelineFilter.local.id: local], olderPage: older,
+      olderPageDelay: olderPageDelay)
     subject = TimelineViewModel(statusFetcher: statuses, markerFetcher: markers)
     subject.client = client
   }
@@ -343,5 +349,42 @@ struct TimelineMarkerFlowTests {
     #expect(await harness.markers.markerRequests == 0)
     #expect(await harness.markers.statusRequests.isEmpty)
     #expect(await harness.homeIds().first == "300")
+  }
+
+  @Test func aPositionThatFailedToLoadIsFollowedTheNextTimeHomeLoads() async throws {
+    let harness = MarkerHarness()
+    await harness.visit(.home, scrolledTo: harness.home[0])
+    harness.subject.saveMarker()
+    await harness.eventually { await !harness.markers.saved.isEmpty }
+    await harness.settle()
+    try await harness.markers.writeFromAnotherDevice(lastReadId: "250")
+    await harness.statuses.failNextPages()
+
+    harness.subject.refreshTimeline()
+    await harness.subject.timelineTask?.value
+    #expect(await harness.homeIds().first == "300")
+    await harness.statuses.failNextPages(false)
+
+    await harness.visit(.local, scrolledTo: harness.local[0])
+    await harness.visit(.home, scrolledTo: harness.home[0])
+
+    #expect(await harness.homeIds() == ["300", "299", "250", "249", "248"])
+  }
+
+  @Test func aPositionThatWasCancelledWhileLoadingIsFollowedTheNextTimeHomeLoads() async throws {
+    let harness = MarkerHarness(olderPageDelay: .milliseconds(400))
+    await harness.visit(.home, scrolledTo: harness.home[0])
+    harness.subject.saveMarker()
+    await harness.eventually { await !harness.markers.saved.isEmpty }
+    await harness.settle()
+    try await harness.markers.writeFromAnotherDevice(lastReadId: "250")
+
+    harness.subject.refreshTimeline()
+    try await Task.sleep(for: .milliseconds(100))
+    // The user leaves Home while the other device's position is still loading.
+    await harness.visit(.local, scrolledTo: harness.local[0])
+    await harness.visit(.home, scrolledTo: harness.home[0])
+
+    #expect(await harness.homeIds() == ["300", "299", "250", "249", "248"])
   }
 }

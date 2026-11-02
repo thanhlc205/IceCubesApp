@@ -243,18 +243,28 @@ extension TimelineViewModel: GapLoadingFetcher {
       statusesState = .loading
     }
 
-    let olderStatuses = try await statusFetcher.fetchNextPage(
-      client: client,
-      timeline: initialTimeline,
-      lastId: marker.lastReadId,
-      offset: 0)
+    let olderStatuses: [Status]
+    do {
+      olderStatuses = try await statusFetcher.fetchNextPage(
+        client: client,
+        timeline: initialTimeline,
+        lastId: marker.lastReadId,
+        offset: 0)
+    } catch {
+      // The marker was consumed above: follow it again the next time Home loads.
+      needsMarkerSync = true
+      throw error
+    }
     // `max_id` is exclusive: load the marker status itself so the timeline can land on it. If that
     // fails, for example because the post was deleted, the list starts at the first older post.
     let markerStatus = try? await markerFetcher.fetchStatus(client: client, id: marker.lastReadId)
     let statuses = (markerStatus.map { [$0] } ?? []) + olderStatuses
 
     // The user may have moved to another timeline while we were loading.
-    guard !Task.isCancelled, timeline == initialTimeline else { return }
+    guard !Task.isCancelled, timeline == initialTimeline else {
+      needsMarkerSync = true
+      return
+    }
 
     await updateDatasourceAndState(statuses: statuses, client: client, replaceExisting: true)
     lastSavedMarkerId = marker.lastReadId
@@ -669,7 +679,13 @@ extension TimelineViewModel {
       needsMarkerSync = true
       return
     }
-    guard let remote, !Task.isCancelled, timeline == .home else { return }
+    // Nothing saved on the server, so nothing to follow.
+    guard let remote else { return }
+    // Cancelled, or moved to another timeline, while reading: look again the next time Home loads.
+    guard !Task.isCancelled, timeline == .home else {
+      needsMarkerSync = true
+      return
+    }
 
     let visibleIds = await cache.getLatestSeenStatus(for: client, filter: timeline.id)
     let localId = visibleIds?.first
@@ -686,9 +702,12 @@ extension TimelineViewModel {
       localSeenAt: await cache.getLatestSeenDate(for: client, filter: timeline.id),
       lastSyncedAt: await cache.getLastSyncedMarkerDate(for: client),
       movedSinceSync: movedSinceSync)
-    if shouldApply, !Task.isCancelled, timeline == .home {
-      marker = remote
+    guard shouldApply else { return }
+    guard !Task.isCancelled, timeline == .home else {
+      needsMarkerSync = true
+      return
     }
+    marker = remote
   }
 
   /// Saves the position shortly after the user stops scrolling, so other devices see it
@@ -715,6 +734,8 @@ extension TimelineViewModel {
         // the post saved or applied last is still on screen the position has not moved: writing
         // back the newest visible post would nudge it up with every hand-off.
         !visibleIds.contains(where: { $0 == lastSavedMarkerId }),
+        // The server answers with the marker it stored. Without it there is no date to record, and
+        // the next sync compares ids and dates as usual.
         let saved = try? await markerFetcher.saveHomeMarker(client: client, lastReadId: id)
       else { return }
       lastSavedMarkerId = id
