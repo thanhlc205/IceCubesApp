@@ -80,22 +80,37 @@ public actor TimelineCache {
     }
   }
 
+  private func latestSeenKey(for client: MastodonClient, filter: String) -> String {
+    filter == "Home" ? "timeline-last-seen-\(client.id)" : "timeline-last-seen-\(client.id)-\(filter)"
+  }
+
   func setLatestSeenStatuses(_ statuses: [Status], for client: MastodonClient, filter: String) {
     let statuses = statuses.sorted(by: { $0.createdAt.asDate > $1.createdAt.asDate })
-    if filter == "Home" {
-      UserDefaults.standard.set(statuses.map { $0.id }, forKey: "timeline-last-seen-\(client.id)")
-    } else {
-      UserDefaults.standard.set(
-        statuses.map { $0.id }, forKey: "timeline-last-seen-\(client.id)-\(filter)")
-    }
+    let key = latestSeenKey(for: client, filter: filter)
+    UserDefaults.standard.set(statuses.map { $0.id }, forKey: key)
+    UserDefaults.standard.set(Date(), forKey: "\(key)-at")
   }
 
   func getLatestSeenStatus(for client: MastodonClient, filter: String) -> [String]? {
-    if filter == "Home" {
-      UserDefaults.standard.array(forKey: "timeline-last-seen-\(client.id)") as? [String]
-    } else {
-      UserDefaults.standard.array(forKey: "timeline-last-seen-\(client.id)-\(filter)") as? [String]
-    }
+    UserDefaults.standard.array(forKey: latestSeenKey(for: client, filter: filter)) as? [String]
+  }
+
+  /// The Home marker this device last wrote or applied, with the date the server stamped it with.
+  func setLastSyncedMarker(id: String, at date: Date, for client: MastodonClient) {
+    UserDefaults.standard.set(id, forKey: "timeline-marker-synced-id-\(client.id)")
+    UserDefaults.standard.set(date, forKey: "timeline-marker-synced-at-\(client.id)")
+  }
+
+  func getLastSyncedMarkerDate(for client: MastodonClient) -> Date? {
+    UserDefaults.standard.object(forKey: "timeline-marker-synced-at-\(client.id)") as? Date
+  }
+
+  func getLastSyncedMarkerId(for client: MastodonClient) -> String? {
+    UserDefaults.standard.string(forKey: "timeline-marker-synced-id-\(client.id)")
+  }
+
+  func getLatestSeenDate(for client: MastodonClient, filter: String) -> Date? {
+    UserDefaults.standard.object(forKey: "\(latestSeenKey(for: client, filter: filter))-at") as? Date
   }
 }
 

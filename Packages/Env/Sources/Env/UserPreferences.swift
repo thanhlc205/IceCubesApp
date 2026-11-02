@@ -74,6 +74,7 @@ import SwiftUI
     
     @AppStorage("stream_home_timeline") public var streamHomeTimeline: Bool = false
     @AppStorage("full_timeline_fetch") public var fullTimelineFetch: Bool = false
+    @AppStorage("sync_timeline_position") public var syncTimelinePosition: Bool = true
 
     // Notifications
     @AppStorage("notifications-truncate-status-content")
@@ -376,6 +377,12 @@ import SwiftUI
     }
   }
 
+  public var syncTimelinePosition: Bool {
+    didSet {
+      storage.syncTimelinePosition = syncTimelinePosition
+    }
+  }
+
   // Notifications
   public var notificationsTruncateStatusContent: Bool {
     didSet {
@@ -563,6 +570,7 @@ import SwiftUI
     notificationsTruncateStatusContent = storage.notificationsTruncateStatusContent
     streamHomeTimeline = storage.streamHomeTimeline
     fullTimelineFetch = storage.fullTimelineFetch
+    syncTimelinePosition = storage.syncTimelinePosition
   }
 }
 

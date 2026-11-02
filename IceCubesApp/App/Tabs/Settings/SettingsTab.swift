@@ -40,6 +40,7 @@ struct SettingsTabs: View {
         generalSection
         socialKeyboardSection
         streamHomeTimelineSection
+        syncTimelinePositionSection
         timelineFetchSection
         otherSections
         cacheSection
@@ -265,6 +266,21 @@ struct SettingsTabs: View {
       }
     } footer: {
       Text("Keeps your home timeline up to date in real time using streaming when available. Disable in case of performance issues.")
+    }
+    #if !os(visionOS)
+      .listRowBackground(theme.primaryBackgroundColor)
+    #endif
+  }
+
+  private var syncTimelinePositionSection: some View {
+    @Bindable var preferences = preferences
+    return Section {
+      Toggle(isOn: $preferences.syncTimelinePosition) {
+        Label("settings.timeline.sync-position", systemImage: "ipad.and.iphone")
+          .symbolVariant(preferences.syncTimelinePosition ? .none : .slash)
+      }
+    } footer: {
+      Text("settings.timeline.sync-position-footer")
     }
     #if !os(visionOS)
       .listRowBackground(theme.primaryBackgroundColor)

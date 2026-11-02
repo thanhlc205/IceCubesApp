@@ -59,12 +59,26 @@ import SwiftUI
 
   private(set) var timelineTask: Task<Void, Never>?
 
+  @ObservationIgnored
+  private var saveMarkerTask: Task<Void, Never>?
+
+  /// Home position last written to, or read from, the server. Stops us from saving a position that
+  /// has not moved, which would overwrite what another device has written since.
+  @ObservationIgnored
+  private var lastSavedMarkerId: String?
+
+  /// The server marker is only read when the app opens or comes back to the foreground, not each
+  /// time the Home timeline is shown again.
+  @ObservationIgnored
+  private var needsMarkerSync = true
+
   var tag: Tag?
 
   // Internal source of truth for a timeline.
   @ObservationIgnored
   private(set) var datasource = TimelineDatasource()
   private let statusFetcher: TimelineStatusFetching
+  private let markerFetcher: TimelineMarkerFetching
 
   @ObservationIgnored
   private let cache = TimelineCache()
@@ -111,6 +125,8 @@ import SwiftUI
   var client: MastodonClient? {
     didSet {
       if oldValue != client {
+        needsMarkerSync = true
+        lastSavedMarkerId = nil
         Task {
           await reset()
         }
@@ -127,8 +143,12 @@ import SwiftUI
   let pendingStatusesObserver: TimelineUnreadStatusesObserver = .init()
   var marker: Marker.Content?
 
-  init(statusFetcher: TimelineStatusFetching = TimelineStatusFetcher()) {
+  init(
+    statusFetcher: TimelineStatusFetching = TimelineStatusFetcher(),
+    markerFetcher: TimelineMarkerFetching = TimelineMarkerFetcher()
+  ) {
     self.statusFetcher = statusFetcher
+    self.markerFetcher = markerFetcher
     Task {
       await datasource.setFilterContext(timeline.filterContext)
     }
@@ -196,9 +216,14 @@ extension TimelineViewModel: GapLoadingFetcher {
     await fetchNewestStatuses(pullToRefresh: true)
   }
 
+  /// Refreshes the timeline when the app returns to the foreground, which is also when the Home
+  /// position saved by another device is picked up. The Refresh menu item and pull to refresh
+  /// reload without following it, so a deliberate refresh never moves the list.
   func refreshTimeline() {
     timelineTask?.cancel()
+    needsMarkerSync = true
     timelineTask = Task {
+      await syncMarkerIfNeeded()
       await fetchNewestStatuses(pullToRefresh: false)
     }
   }
@@ -208,20 +233,48 @@ extension TimelineViewModel: GapLoadingFetcher {
     await updateStatusesState()
   }
 
-  func fetchStatuses(from: Marker.Content) async throws {
+  func fetchStatuses(from marker: Marker.Content) async throws {
     guard let client else { return }
-    statusesState = .loading
-    let statuses: [Status] = try await client.get(
-      endpoint: timeline.endpoint(
-        sinceId: nil,
-        maxId: from.lastReadId,
-        minId: nil,
-        offset: 0,
-        limit: 40))
+    let initialTimeline = timeline
+    // Consume the marker first: if anything below fails it must not stay around and get applied
+    // to whichever timeline is loaded next.
+    self.marker = nil
+    if await datasource.isEmpty {
+      statusesState = .loading
+    }
+
+    let olderStatuses: [Status]
+    do {
+      olderStatuses = try await statusFetcher.fetchNextPage(
+        client: client,
+        timeline: initialTimeline,
+        lastId: marker.lastReadId,
+        offset: 0)
+    } catch {
+      // The marker was consumed above: follow it again the next time Home loads.
+      needsMarkerSync = true
+      throw error
+    }
+    // `max_id` is exclusive: load the marker status itself so the timeline can land on it. If that
+    // fails, for example because the post was deleted, the list starts at the first older post.
+    let markerStatus = try? await markerFetcher.fetchStatus(client: client, id: marker.lastReadId)
+    let statuses = (markerStatus.map { [$0] } ?? []) + olderStatuses
+
+    // The user may have moved to another timeline while we were loading.
+    guard !Task.isCancelled, timeline == initialTimeline else {
+      needsMarkerSync = true
+      return
+    }
 
     await updateDatasourceAndState(statuses: statuses, client: client, replaceExisting: true)
-    marker = nil
+    lastSavedMarkerId = marker.lastReadId
+    await cache.setLastSyncedMarker(
+      id: marker.lastReadId, at: marker.updatedAt.asDate, for: client)
     await fetchNewestStatuses(pullToRefresh: false)
+
+    // Newest statuses are inserted above the marker: scroll back to where the user left off.
+    guard timeline == initialTimeline else { return }
+    scrollToId = statuses.first?.id
   }
 
   func fetchNewestStatuses(pullToRefresh: Bool) async {
@@ -250,6 +303,13 @@ extension TimelineViewModel: GapLoadingFetcher {
     let datasourceIsEmpty = await datasource.isEmpty
     if datasourceIsEmpty {
       statusesState = .loading
+    }
+
+    // Another device may have read further: jump to its position instead of restoring ours.
+    await syncMarkerIfNeeded()
+    if let marker {
+      try await fetchStatuses(from: marker)
+      return
     }
 
     // If we get statuses from the cache for the home timeline, we displays those.
@@ -451,6 +511,7 @@ extension TimelineViewModel: GapLoadingFetcher {
       Task {
         await cache.setLatestSeenStatuses(visibleStatuses, for: client, filter: timeline.id)
       }
+      scheduleMarkerSave()
     }
   }
 
@@ -596,23 +657,89 @@ extension TimelineViewModel {
     guard let client else {
       return nil
     }
+    return try? await markerFetcher.fetchHomeMarker(client: client)
+  }
+
+  /// Picks up the Home position saved by another device. Sets `marker` when it should be applied.
+  func syncMarkerIfNeeded() async {
+    guard UserPreferences.shared.syncTimelinePosition,
+      timeline == .home,
+      marker == nil,
+      needsMarkerSync,
+      let client,
+      client.isAuth
+    else { return }
+
+    needsMarkerSync = false
+    let remote: Marker.Content?
     do {
-      let data: Marker = try await client.get(endpoint: Markers.markers)
-      return data.home
+      remote = try await markerFetcher.fetchHomeMarker(client: client)
     } catch {
-      return nil
+      // Try again the next time the Home timeline loads.
+      needsMarkerSync = true
+      return
+    }
+    // Nothing saved on the server, so nothing to follow.
+    guard let remote else { return }
+    // Cancelled, or moved to another timeline, while reading: look again the next time Home loads.
+    guard !Task.isCancelled, timeline == .home else {
+      needsMarkerSync = true
+      return
+    }
+
+    let visibleIds = await cache.getLatestSeenStatus(for: client, filter: timeline.id)
+    let localId = visibleIds?.first
+    if remote.lastReadId == localId {
+      lastSavedMarkerId = localId
+    }
+    // The position has not moved while the post synced last is still on screen.
+    let syncedId = await cache.getLastSyncedMarkerId(for: client)
+    let movedSinceSync = syncedId.map { !(visibleIds ?? []).contains($0) } ?? true
+    let shouldApply = TimelineMarkerSync.shouldApply(
+      remoteLastReadId: remote.lastReadId,
+      remoteUpdatedAt: remote.updatedAt.asDate,
+      localLastReadId: localId,
+      localSeenAt: await cache.getLatestSeenDate(for: client, filter: timeline.id),
+      lastSyncedAt: await cache.getLastSyncedMarkerDate(for: client),
+      movedSinceSync: movedSinceSync)
+    guard shouldApply else { return }
+    guard !Task.isCancelled, timeline == .home else {
+      needsMarkerSync = true
+      return
+    }
+    marker = remote
+  }
+
+  /// Saves the position shortly after the user stops scrolling, so other devices see it
+  /// even if the app is killed before it goes to the background.
+  private func scheduleMarkerSave() {
+    guard timeline == .home, UserPreferences.shared.syncTimelinePosition else { return }
+    saveMarkerTask?.cancel()
+    saveMarkerTask = Task {
+      try? await Task.sleep(for: .seconds(5))
+      guard !Task.isCancelled else { return }
+      saveMarker()
     }
   }
 
   func saveMarker() {
     guard timeline == .home, let client else { return }
+    // Read the filter now: the task below runs after the timeline has already been switched, and
+    // must not save the position of the timeline we are moving to as the Home marker.
+    let filter = timeline.id
     Task {
-      guard let id = await cache.getLatestSeenStatus(for: client, filter: timeline.id)?.first else {
-        return
-      }
-      do {
-        let _: Marker = try await client.post(endpoint: Markers.markHome(lastReadId: id))
-      } catch {}
+      guard let visibleIds = await cache.getLatestSeenStatus(for: client, filter: filter),
+        let id = visibleIds.first,
+        // Scrolling to a position applied from another device also shows the posts above it. While
+        // the post saved or applied last is still on screen the position has not moved: writing
+        // back the newest visible post would nudge it up with every hand-off.
+        !visibleIds.contains(where: { $0 == lastSavedMarkerId }),
+        // The server answers with the marker it stored. Without it there is no date to record, and
+        // the next sync compares ids and dates as usual.
+        let saved = try? await markerFetcher.saveHomeMarker(client: client, lastReadId: id)
+      else { return }
+      lastSavedMarkerId = id
+      await cache.setLastSyncedMarker(id: id, at: saved.updatedAt.asDate, for: client)
     }
   }
 }
