@@ -1,7 +1,7 @@
 import Foundation
 import Models
 
-func makeStatus(id: String, hidden: Bool) -> Status {
+func makeStatus(id: String, hidden: Bool, createdAt: ServerDate? = nil) -> Status {
   let base = Status.placeholder()
   let filtered: [Filtered]? = hidden ? [makeHiddenFilter()].compactMap { $0 } : nil
 
@@ -9,7 +9,7 @@ func makeStatus(id: String, hidden: Bool) -> Status {
     id: id,
     content: base.content,
     account: base.account,
-    createdAt: base.createdAt,
+    createdAt: createdAt ?? base.createdAt,
     editedAt: base.editedAt,
     reblog: base.reblog,
     mediaAttachments: base.mediaAttachments,
