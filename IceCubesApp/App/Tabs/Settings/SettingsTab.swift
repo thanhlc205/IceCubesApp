@@ -276,11 +276,11 @@ struct SettingsTabs: View {
     @Bindable var preferences = preferences
     return Section {
       Toggle(isOn: $preferences.syncTimelinePosition) {
-        Label("Sync timeline position", systemImage: "ipad.and.iphone")
+        Label("settings.timeline.sync-position", systemImage: "ipad.and.iphone")
           .symbolVariant(preferences.syncTimelinePosition ? .none : .slash)
       }
     } footer: {
-      Text("Shares your home timeline reading position between your devices through your Mastodon server, so you can pick up where you left off on iPhone, iPad and Mac.")
+      Text("settings.timeline.sync-position-footer")
     }
     #if !os(visionOS)
       .listRowBackground(theme.primaryBackgroundColor)

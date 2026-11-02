@@ -64906,6 +64906,244 @@
         }
       }
     },
+    "settings.timeline.sync-position" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сінхранізаваць пазіцыю ў шкале часу"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronitzar la posició de la línia de temps"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeline-Position synchronisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync timeline position"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync timeline position"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar posición de la cronología"
+          }
+        },
+        "eu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sinkronizatu denbora-lerroaren posizioa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchroniser la position dans la chronologie"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizza la posizione della timeline"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タイムラインの位置を同期"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "타임라인 위치 동기화"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synkroniser posisjon i tidslinjen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchroniseer tijdlijnpositie"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizuj pozycję w strumieniu"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar a posição da timeline"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zaman akışı konumunu senkronize et"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синхронізувати позицію у стрічці"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步时间线位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步時間軸位置"
+          }
+        }
+      }
+    },
+    "settings.timeline.sync-position-footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сінхранізуе пазіцыю чытання галоўнай шкалы часу паміж вашымі прыладамі праз ваш сервер Mastodon, каб вы маглі працягнуць з таго месца, дзе спыніліся, на iPhone, iPad і Mac."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparteix la posició de lectura de la línia de temps d'inici entre els vostres dispositius a través del servidor de Mastodon, perquè pugueu continuar allà on ho vau deixar a l'iPhone, a l'iPad i al Mac."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilt die Leseposition deiner Home-Timeline über deinen Mastodon-Server zwischen deinen Geräten, damit du auf iPhone, iPad und Mac dort weitermachen kannst, wo du aufgehört hast."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shares your home timeline reading position between your devices through your Mastodon server, so you can pick up where you left off on iPhone, iPad and Mac."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shares your home timeline reading position between your devices through your Mastodon server, so you can pick up where you left off on iPhone, iPad and Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparte la posición de lectura de tu cronología principal entre tus dispositivos a través de tu servidor de Mastodon, para que puedas seguir donde lo dejaste en iPhone, iPad y Mac."
+          }
+        },
+        "eu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hasierako denbora-lerroaren irakurketa-posizioa zure gailuen artean partekatzen du zure Mastodon zerbitzariaren bidez, iPhone, iPad eta Mac gailuetan utzi zenuen lekutik jarraitu ahal izateko."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partage la position de lecture de votre chronologie personnelle entre vos appareils via votre serveur Mastodon, afin de reprendre là où vous en étiez sur iPhone, iPad et Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Condivide la posizione di lettura della home tra i tuoi dispositivi tramite il server Mastodon, così puoi riprendere da dove avevi interrotto su iPhone, iPad e Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mastodonサーバー経由で、デバイス間でホームタイムラインの閲覧位置を共有し、iPhone、iPad、Macで前回の続きから読めるようにします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mastodon 서버를 통해 기기 간에 홈 타임라인에서 마지막으로 본 위치를 공유하여, iPhone, iPad, Mac에서 보던 곳부터 이어서 볼 수 있습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deler leseposisjonen i Hjem-tidslinjen din mellom enhetene dine via Mastodon-serveren din, slik at du kan fortsette der du sluttet på iPhone, iPad og Mac."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deelt de leespositie van je starttijdlijn tussen je apparaten via je Mastodon-server, zodat je op iPhone, iPad en Mac verder kunt lezen waar je gebleven was."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Udostępnia pozycję w strumieniu strony głównej między urządzeniami za pośrednictwem serwera Mastodon, aby na iPhonie, iPadzie i Macu można było wrócić do miejsca, w którym przerwano czytanie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compartilha a posição de leitura da sua timeline principal entre seus dispositivos por meio do seu servidor Mastodon, para que você possa continuar de onde parou no iPhone, no iPad e no Mac."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ana Ekran zaman akışınızdaki okuma konumunu Mastodon sunucunuz üzerinden cihazlarınız arasında paylaşır; böylece iPhone, iPad ve Mac'te kaldığınız yerden devam edebilirsiniz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синхронізує позицію читання домашньої стрічки між вашими пристроями через ваш сервер Mastodon, щоб ви могли продовжити з того місця, де зупинилися, на iPhone, iPad і Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通过你的 Mastodon 服务器在设备之间共享主页时间线的阅读位置，让你在 iPhone、iPad 和 Mac 上都能从上次读到的地方继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過您的 Mastodon 伺服器在您的裝置之間共享主時間軸的閱讀位置，讓您在 iPhone、iPad 和 Mac 上都能從上次讀到的地方繼續。"
+          }
+        }
+      }
+    },
     "settings.title" : {
       "localizations" : {
         "be" : {
@@ -65731,10 +65969,6 @@
           }
         }
       }
-    },
-    "Shares your home timeline reading position between your devices through your Mastodon server, so you can pick up where you left off on iPhone, iPad and Mac." : {
-      "comment" : "A description of the feature that allows users to share their home timeline reading position between their devices.",
-      "isCommentAutoGenerated" : true
     },
     "status.action.bookmark" : {
       "extractionState" : "manual",
@@ -80301,10 +80535,6 @@
           }
         }
       }
-    },
-    "Sync timeline position" : {
-      "comment" : "A toggle that allows users to share their reading position in the home timeline between devices.",
-      "isCommentAutoGenerated" : true
     },
     "Tab" : {
       "localizations" : {
