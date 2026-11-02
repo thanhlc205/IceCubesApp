@@ -276,7 +276,7 @@ struct SettingsTabs: View {
     @Bindable var preferences = preferences
     return Section {
       Toggle(isOn: $preferences.syncTimelinePosition) {
-        Label("Sync timeline position", systemImage: "icloud")
+        Label("Sync timeline position", systemImage: "ipad.and.iphone")
           .symbolVariant(preferences.syncTimelinePosition ? .none : .slash)
       }
     } footer: {

@@ -1,3 +1,4 @@
+import Env
 import Foundation
 import Models
 import NetworkClient
@@ -172,7 +173,8 @@ final class MarkerHarness {
 }
 
 @MainActor
-@Suite("Timeline marker flow")
+// Serialized because one test turns the shared sync preference off.
+@Suite("Timeline marker flow", .serialized)
 struct TimelineMarkerFlowTests {
   @Test func leavingHomeSavesTheHomePositionNotTheNextTimelines() async {
     let harness = MarkerHarness()
@@ -313,5 +315,33 @@ struct TimelineMarkerFlowTests {
     await harness.subject.timelineTask?.value
 
     #expect(await harness.markers.statusRequests.isEmpty)
+  }
+
+  @Test func refreshingFromTheMenuDoesNotFollowAnotherDevice() async throws {
+    let harness = MarkerHarness()
+    await harness.visit(.home, scrolledTo: harness.home[0])
+    try await harness.markers.writeFromAnotherDevice(lastReadId: "250")
+
+    // The Refresh menu item selects `.latest`, which reloads Home without `refreshTimeline()`.
+    harness.subject.timeline = .latest
+    await harness.settle()
+
+    #expect(await harness.markers.markerRequests == 1)
+    #expect(await harness.markers.statusRequests.isEmpty)
+  }
+
+  @Test func doesNotFollowAnotherDeviceWhileSyncIsOff() async throws {
+    UserPreferences.shared.syncTimelinePosition = false
+    defer { UserPreferences.shared.syncTimelinePosition = true }
+    let harness = MarkerHarness()
+    await harness.visit(.home, scrolledTo: harness.home[0])
+    try await harness.markers.writeFromAnotherDevice(lastReadId: "250")
+
+    harness.subject.refreshTimeline()
+    await harness.subject.timelineTask?.value
+
+    #expect(await harness.markers.markerRequests == 0)
+    #expect(await harness.markers.statusRequests.isEmpty)
+    #expect(await harness.homeIds().first == "300")
   }
 }

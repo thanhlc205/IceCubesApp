@@ -216,6 +216,9 @@ extension TimelineViewModel: GapLoadingFetcher {
     await fetchNewestStatuses(pullToRefresh: true)
   }
 
+  /// Refreshes the timeline when the app returns to the foreground, which is also when the Home
+  /// position saved by another device is picked up. The Refresh menu item and pull to refresh
+  /// reload without following it, so a deliberate refresh never moves the list.
   func refreshTimeline() {
     timelineTask?.cancel()
     needsMarkerSync = true
@@ -245,7 +248,8 @@ extension TimelineViewModel: GapLoadingFetcher {
       timeline: initialTimeline,
       lastId: marker.lastReadId,
       offset: 0)
-    // `max_id` is exclusive: load the marker status itself so the timeline can land on it.
+    // `max_id` is exclusive: load the marker status itself so the timeline can land on it. If that
+    // fails, for example because the post was deleted, the list starts at the first older post.
     let markerStatus = try? await markerFetcher.fetchStatus(client: client, id: marker.lastReadId)
     let statuses = (markerStatus.map { [$0] } ?? []) + olderStatuses
 
