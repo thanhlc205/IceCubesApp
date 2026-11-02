@@ -38,6 +38,24 @@ import Testing
         localLastReadId: nil, localSeenAt: nil, lastSyncedAt: now))
   }
 
+  @Test func followsTheRemoteMarkerWithoutComparingClocksWhenNothingMovedHere() {
+    // The remote marker only looks older than the last local change because this device's clock
+    // runs ahead of the server's.
+    #expect(
+      TimelineMarkerSync.shouldApply(
+        remoteLastReadId: "10", remoteUpdatedAt: now.addingTimeInterval(-600),
+        localLastReadId: "20", localSeenAt: now,
+        lastSyncedAt: now.addingTimeInterval(-900), movedSinceSync: false))
+  }
+
+  @Test func comparesClocksWhenThePositionMovedAfterTheLastSync() {
+    #expect(
+      !TimelineMarkerSync.shouldApply(
+        remoteLastReadId: "10", remoteUpdatedAt: now.addingTimeInterval(-60),
+        localLastReadId: "20", localSeenAt: now,
+        lastSyncedAt: now.addingTimeInterval(-900), movedSinceSync: true))
+  }
+
   @Test func keepsLocalPositionWhenItIsNewerThanRemoteMarker() {
     #expect(
       !TimelineMarkerSync.shouldApply(

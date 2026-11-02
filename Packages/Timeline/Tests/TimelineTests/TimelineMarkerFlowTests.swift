@@ -43,16 +43,21 @@ actor RecordingMarkerFetcher: TimelineMarkerFetching {
   private(set) var markerRequests = 0
   private(set) var statusRequests: [String] = []
   private let statuses: [String: Status]
+  /// How far the server's clock is ahead of this device's.
+  private let serverClockOffset: TimeInterval
   private var writes = 0
 
-  init(statuses: [Status] = []) {
+  init(statuses: [Status] = [], serverClockOffset: TimeInterval = 0) {
     self.statuses = Dictionary(uniqueKeysWithValues: statuses.map { ($0.id, $0) })
+    self.serverClockOffset = serverClockOffset
   }
 
-  /// Simulates another device writing the Home marker a moment after this one last scrolled.
-  func writeFromAnotherDevice(lastReadId: String) throws {
+  /// Simulates another device writing the Home marker `ahead` seconds from now, by default a
+  /// moment after this one last scrolled.
+  func writeFromAnotherDevice(lastReadId: String, ahead: TimeInterval = 1) throws {
     remote = try Self.makeContent(
-      lastReadId: lastReadId, version: writes + 1, at: Date().addingTimeInterval(1))
+      lastReadId: lastReadId, version: writes + 1,
+      at: Date().addingTimeInterval(serverClockOffset + ahead))
     writes += 1
   }
 
@@ -64,7 +69,8 @@ actor RecordingMarkerFetcher: TimelineMarkerFetching {
   func saveHomeMarker(client: MastodonClient, lastReadId: String) async throws -> Marker.Content? {
     saved.append(lastReadId)
     writes += 1
-    remote = try Self.makeContent(lastReadId: lastReadId, version: writes, at: Date())
+    remote = try Self.makeContent(
+      lastReadId: lastReadId, version: writes, at: Date().addingTimeInterval(serverClockOffset))
     return remote
   }
 
@@ -115,8 +121,9 @@ final class MarkerHarness {
   let otherDevice = post("250")
   let older = [post("249"), post("248")]
 
-  init() {
-    markers = RecordingMarkerFetcher(statuses: home + local + [otherDevice])
+  init(serverClockOffset: TimeInterval = 0) {
+    markers = RecordingMarkerFetcher(
+      statuses: home + local + [otherDevice], serverClockOffset: serverClockOffset)
     statuses = ScriptedStatusFetcher(
       pages: [TimelineFilter.home.id: home, TimelineFilter.local.id: local], olderPage: older)
     subject = TimelineViewModel(statusFetcher: statuses, markerFetcher: markers)
@@ -274,5 +281,37 @@ struct TimelineMarkerFlowTests {
     await harness.eventually { await !harness.markers.saved.isEmpty }
 
     #expect(await harness.markers.saved == ["249"])
+  }
+
+  @Test func followsAnotherDeviceWhenThisDevicesClockRunsAhead() async throws {
+    // The server's clock is ten minutes behind this device's, so its dates look old.
+    let harness = MarkerHarness(serverClockOffset: -600)
+    await harness.visit(.home, scrolledTo: harness.home[0])
+    harness.subject.saveMarker()
+    await harness.eventually { await !harness.markers.saved.isEmpty }
+    await harness.settle()
+    try await harness.markers.writeFromAnotherDevice(lastReadId: "250")
+
+    harness.subject.refreshTimeline()
+    await harness.subject.timelineTask?.value
+
+    #expect(await harness.markers.statusRequests == ["250"])
+  }
+
+  @Test func keepsAPositionMovedAfterTheOtherDevicesWrite() async throws {
+    let harness = MarkerHarness()
+    await harness.visit(.home, scrolledTo: harness.home[0])
+    harness.subject.saveMarker()
+    await harness.eventually { await !harness.markers.saved.isEmpty }
+    await harness.settle()
+    try await harness.markers.writeFromAnotherDevice(lastReadId: "250", ahead: 0)
+    await harness.settle()
+    // The user keeps reading here after the other device wrote, and has not saved that yet.
+    await harness.show([harness.home[1]])
+
+    harness.subject.refreshTimeline()
+    await harness.subject.timelineTask?.value
+
+    #expect(await harness.markers.statusRequests.isEmpty)
   }
 }

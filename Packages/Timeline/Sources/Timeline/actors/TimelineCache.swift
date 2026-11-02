@@ -95,13 +95,18 @@ public actor TimelineCache {
     UserDefaults.standard.array(forKey: latestSeenKey(for: client, filter: filter)) as? [String]
   }
 
-  /// Server date of the Home marker this device last wrote or applied.
-  func setLastSyncedMarkerDate(_ date: Date, for client: MastodonClient) {
+  /// The Home marker this device last wrote or applied, with the date the server stamped it with.
+  func setLastSyncedMarker(id: String, at date: Date, for client: MastodonClient) {
+    UserDefaults.standard.set(id, forKey: "timeline-marker-synced-id-\(client.id)")
     UserDefaults.standard.set(date, forKey: "timeline-marker-synced-at-\(client.id)")
   }
 
   func getLastSyncedMarkerDate(for client: MastodonClient) -> Date? {
     UserDefaults.standard.object(forKey: "timeline-marker-synced-at-\(client.id)") as? Date
+  }
+
+  func getLastSyncedMarkerId(for client: MastodonClient) -> String? {
+    UserDefaults.standard.string(forKey: "timeline-marker-synced-id-\(client.id)")
   }
 
   func getLatestSeenDate(for client: MastodonClient, filter: String) -> Date? {

@@ -254,7 +254,8 @@ extension TimelineViewModel: GapLoadingFetcher {
 
     await updateDatasourceAndState(statuses: statuses, client: client, replaceExisting: true)
     lastSavedMarkerId = marker.lastReadId
-    await cache.setLastSyncedMarkerDate(marker.updatedAt.asDate, for: client)
+    await cache.setLastSyncedMarker(
+      id: marker.lastReadId, at: marker.updatedAt.asDate, for: client)
     await fetchNewestStatuses(pullToRefresh: false)
 
     // Newest statuses are inserted above the marker: scroll back to where the user left off.
@@ -666,16 +667,21 @@ extension TimelineViewModel {
     }
     guard let remote, !Task.isCancelled, timeline == .home else { return }
 
-    let localId = await cache.getLatestSeenStatus(for: client, filter: timeline.id)?.first
+    let visibleIds = await cache.getLatestSeenStatus(for: client, filter: timeline.id)
+    let localId = visibleIds?.first
     if remote.lastReadId == localId {
       lastSavedMarkerId = localId
     }
+    // The position has not moved while the post synced last is still on screen.
+    let syncedId = await cache.getLastSyncedMarkerId(for: client)
+    let movedSinceSync = syncedId.map { !(visibleIds ?? []).contains($0) } ?? true
     let shouldApply = TimelineMarkerSync.shouldApply(
       remoteLastReadId: remote.lastReadId,
       remoteUpdatedAt: remote.updatedAt.asDate,
       localLastReadId: localId,
       localSeenAt: await cache.getLatestSeenDate(for: client, filter: timeline.id),
-      lastSyncedAt: await cache.getLastSyncedMarkerDate(for: client))
+      lastSyncedAt: await cache.getLastSyncedMarkerDate(for: client),
+      movedSinceSync: movedSinceSync)
     if shouldApply, !Task.isCancelled, timeline == .home {
       marker = remote
     }
@@ -708,7 +714,7 @@ extension TimelineViewModel {
         let saved = try? await markerFetcher.saveHomeMarker(client: client, lastReadId: id)
       else { return }
       lastSavedMarkerId = id
-      await cache.setLastSyncedMarkerDate(saved.updatedAt.asDate, for: client)
+      await cache.setLastSyncedMarker(id: id, at: saved.updatedAt.asDate, for: client)
     }
   }
 }
