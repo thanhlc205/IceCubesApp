@@ -21,6 +21,9 @@ public struct TrendingLinksListView: View {
 
   @State private var masonry: MasonryColumns
   @State private var heights = CardHeights()
+  /// The column count is unknown until the first layout, so the content stays hidden until then
+  /// rather than showing a single column for a frame.
+  @State private var hasMeasuredWidth = false
 
   public init(cards: [Card]) {
     _masonry = .init(
@@ -81,10 +84,12 @@ public struct TrendingLinksListView: View {
         // filled, and stops once the server returns nothing new (the count no longer changes).
         .id(masonry.cards.count)
       }
+      .opacity(hasMeasuredWidth ? 1 : 0)
     }
     .onGeometryChange(for: Int.self) { proxy in
       Self.columnCount(for: proxy.size.width)
     } action: { newCount in
+      hasMeasuredWidth = true
       guard newCount != masonry.columns.count else { return }
       // Heights depend on the column width, so what was measured no longer applies.
       heights.removeAll()
