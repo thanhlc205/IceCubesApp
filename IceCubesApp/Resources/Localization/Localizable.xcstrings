@@ -53742,7 +53742,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show ALT texts"
+            "value" : "Mostra els textos alternatius"
           }
         },
         "de" : {
@@ -55990,7 +55990,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Display full username"
+            "value" : "Mostra el nom d'usuari complet"
           }
         },
         "de" : {
@@ -58752,7 +58752,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Match system"
+            "value" : "Følg systemet"
           }
         },
         "nl" : {
@@ -60338,7 +60338,7 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Аддалены мясцовы час"
+            "value" : "Аддаленыя мясцовыя шкалы часу"
           }
         },
         "ca" : {
@@ -66954,7 +66954,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Icon style"
+            "value" : "Estil de la icona"
           }
         },
         "de" : {
@@ -68376,7 +68376,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe right"
+            "value" : "Llisca cap a la dreta"
           }
         },
         "de" : {
@@ -68494,7 +68494,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe left"
+            "value" : "Llisca cap a l'esquerra"
           }
         },
         "de" : {
@@ -68724,13 +68724,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use theme colors instead of default colors"
+            "value" : "Выкарыстоўваць колеры тэмы замест стандартных колераў"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use theme colors instead of default colors"
+            "value" : "Fes servir els colors del tema en lloc dels colors per defecte"
           }
         },
         "de" : {
