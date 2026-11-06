@@ -40843,6 +40843,18 @@
         "be" : {
           "variations" : {
             "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : " і %lld іншыя "
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : " і %lld іншых "
+                }
+              },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -40852,7 +40864,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : " і %lld іншыя "
+                  "value" : " і %lld іншага "
                 }
               }
             }
@@ -87875,6 +87887,18 @@
         "be" : {
           "variations" : {
             "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld новыя допісы"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld новых допісаў"
+                }
+              },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -87884,7 +87908,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld новыя допісы"
+                  "value" : "%lld новага допісу"
                 }
               }
             }
