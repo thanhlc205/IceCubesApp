@@ -329,8 +329,10 @@ struct SettingsTabs: View {
       .accessibilityRemoveTraits(.isButton)
       .tint(theme.labelColor)
 
-      NavigationLink(destination: SupportAppView()) {
-        Label("settings.app.support", systemImage: "wand.and.stars")
+      if AppInfo.revenueCatKey != nil {
+        NavigationLink(destination: SupportAppView()) {
+          Label("settings.app.support", systemImage: "wand.and.stars")
+        }
       }
 
       if let reviewURL = URL(
@@ -350,10 +352,12 @@ struct SettingsTabs: View {
       }
 
       #if !targetEnvironment(macCatalyst)
-        NavigationLink {
-          WishlistView()
-        } label: {
-          Label("Feature Requests", systemImage: "list.bullet.rectangle.portrait")
+        if AppInfo.wishKitAPIKey != nil {
+          NavigationLink {
+            WishlistView()
+          } label: {
+            Label("Feature Requests", systemImage: "list.bullet.rectangle.portrait")
+          }
         }
       #endif
 

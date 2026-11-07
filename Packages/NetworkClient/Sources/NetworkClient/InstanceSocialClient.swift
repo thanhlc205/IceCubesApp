@@ -2,8 +2,7 @@ import Foundation
 import Models
 
 public struct InstanceSocialClient: Sendable {
-  private let authorization =
-    "Bearer 8a4xx3D7Hzu1aFnf18qlkH8oU0oZ5ulabXxoS2FtQtwOy8G0DGQhr5PjTIjBnYAmFrSBuE2CcASjFocxJBonY8XGbLySB7MXd9ssrwlRHUXTQh3Z578lE1OfUtafvhML"
+  private let authorization = AppInfo.instancesSocialToken.map { "Bearer \($0)" }
   private let listEndpoint =
     "https://instances.social/api/1.0/instances/list?count=1000&include_closed=false&include_dead=false&min_active_users=500"
   private let searchEndpoint = "https://instances.social/api/1.0/instances/search"
@@ -15,6 +14,8 @@ public struct InstanceSocialClient: Sendable {
   public init() {}
 
   public func fetchInstances(keyword: String) async -> [InstanceSocial] {
+    // No suggestions without an instances.social token (`INSTANCES_SOCIAL_TOKEN`).
+    guard let authorization else { return [] }
     let keyword = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
 
     let endpoint = keyword.isEmpty ? listEndpoint : searchEndpoint + "?q=\(keyword)"

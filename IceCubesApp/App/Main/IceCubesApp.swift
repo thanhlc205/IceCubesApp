@@ -5,6 +5,7 @@ import DesignSystem
 import Env
 import KeychainSwift
 import MediaUI
+import Models
 import NetworkClient
 import RevenueCat
 import StatusKit
@@ -72,8 +73,9 @@ struct IceCubesApp: App {
   }
 
   func setupRevenueCat() {
+    guard let revenueCatKey = AppInfo.revenueCatKey else { return }
     Purchases.logLevel = .error
-    Purchases.configure(withAPIKey: "appl_JXmiRckOzXXTsHKitQiicXCvMQi")
+    Purchases.configure(withAPIKey: revenueCatKey)
     Purchases.shared.getCustomerInfo { info, _ in
       if info?.entitlements["Supporter"]?.isActive == true {
         isSupporter = true
@@ -97,7 +99,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     Telemetry.setup()
     Telemetry.signal("app.launched")
     #if !targetEnvironment(macCatalyst)
-      WishKit.configure(with: "AF21AE07-3BA9-4FE2-BFB1-59A3B3941730")
+      if let wishKitAPIKey = AppInfo.wishKitAPIKey {
+        WishKit.configure(with: wishKitAPIKey)
+      }
     #endif
     return true
   }
