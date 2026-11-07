@@ -21,7 +21,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 | # | Debt item | Type | I | R | E | Score | Effort | Why it matters | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | App-group and keychain IDs hardcoded to the upstream developer's identity | Infra | 4 | 5 | 2 | **36** | ~3 h | Builds with another bundle prefix don't share settings with the extensions; a Release build on a device would probably fail to save logins, with no error shown | Done (Phase 0) |
-| 2 | No CI job builds or tests pull requests | Infra | 4 | 5 | 3 | **27** | ~1 day | PRs merge after an AI review that can't compile them; none of the 120 tests run | Open |
+| 2 | No CI job builds or tests pull requests | Infra | 4 | 5 | 3 | **27** | ~1 day | PRs merge after an AI review that can't compile them; none of the 120 tests run | Done (Phase 1) |
 | 3 | `CLAUDE.md` is stale, and project conventions live only in one person's local Claude memory | Docs | 3 | 2 | 1 | **25** | ~1 h | Claude sessions and the PR reviewer start with wrong build commands and don't know the localization rules | Done (Phase 0) |
 | 4 | Upstream's service keys and IDs in the source | Infra | 2 | 4 | 2 | **24** | ~2 h | Each launch sends telemetry to an account this fork doesn't control; a shipped build's purchases would go there too | Done (Phase 0) |
 | 5 | Errors are swallowed instead of logged or shown | Code | 3 | 4 | 3 | **21** | ~1 day for a first pass | Failures look like nothing happened, to users and to developers | Open |
@@ -53,6 +53,13 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 - **Evidence:** `.github/workflows/` contains only `claude-code-review.yml` (runs on Ubuntu, can't compile), `claude.yml`, and `validate_translations.yml`.
 - **Fix:** add a macOS workflow that builds the `IceCubesApp` scheme for the simulator, runs the package test schemes, and runs `swiftformat --lint .`.
 - **Catch:** [AppView.swift](IceCubesApp/App/Main/AppView.swift) uses `#available(iOS 27.0, visionOS 27.0, *)`, so the runner needs the iOS 27 SDK. If GitHub's hosted macOS images don't have it, use Xcode Cloud (`ci_scripts/` already exists) or a self-hosted runner.
+- **Done (2026-11-07):** `.github/workflows/build-and-test.yml` runs on GitHub's `xcode-27` image (public preview). On every pull request and every push to `main` it:
+  - selects Xcode 27.2;
+  - builds `IceCubesApp` unsigned from the xcconfig template;
+  - runs all six test schemes on the iOS 27.0 iPhone Air simulator, because the image has no 27.2 runtime;
+  - caches `SourcePackages` and resolves strictly from `Package.resolved`.
+  
+  The `swiftformat --lint .` step waits for the one-time reformat in #11.
 
 ### 3. `CLAUDE.md` is stale; conventions live in local memory
 - **Evidence:** [CLAUDE.md](CLAUDE.md) is out of date in five ways:
