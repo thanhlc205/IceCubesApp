@@ -1,0 +1,68 @@
+name: Build and Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: build-and-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The Xcode 27 image has no iOS 27.2 simulator runtime, so builds use the
+  # 27.2 SDK and tests run on the iOS 27.0 simulator.
+  DESTINATION: platform=iOS Simulator,name=iPhone Air,OS=27.0
+  XCODEBUILD_FLAGS: >-
+    -project IceCubesApp.xcodeproj
+    -derivedDataPath DerivedData
+    -clonedSourcePackagesDirPath SourcePackages
+    -onlyUsePackageVersionsFromResolvedFile
+    -skipMacroValidation
+    CODE_SIGNING_ALLOWED=NO
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: xcode-27
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode 27.2
+        run: sudo xcode-select --switch /Applications/Xcode_27.2.app
+
+      - name: Create the local build config
+        # IceCubesApp.xcconfig is gitignored. CI builds unsigned, so the
+        # template's placeholder team and bundle prefix are enough.
+        run: cp IceCubesApp.xcconfig.template IceCubesApp.xcconfig
+
+      - name: Cache Swift packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('IceCubesApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Build the app
+        run: |
+          set -o pipefail
+          xcodebuild build $XCODEBUILD_FLAGS -scheme IceCubesApp -destination "$DESTINATION" | xcbeautify
+
+      - name: Run package tests
+        run: |
+          set -o pipefail
+          failed=()
+          for scheme in AccountTests EnvTests ModelsTests NetworkClientTests StatusKitTests TimelineTests; do
+            echo "::group::$scheme"
+            if ! xcodebuild test $XCODEBUILD_FLAGS -scheme "$scheme" -destination "$DESTINATION" | xcbeautify; then
+              failed+=("$scheme")
+            fi
+            echo "::endgroup::"
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "::error::Failing test schemes: ${failed[*]}"
+            exit 1
+          fi
