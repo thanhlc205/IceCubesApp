@@ -53,7 +53,10 @@ struct AddRemoteTimelineView: View {
         .listRowBackground(theme.primaryBackgroundColor)
         .disabled(instance == nil)
 
-        instancesListView
+        // Suggestions come from instances.social, which needs `INSTANCES_SOCIAL_TOKEN`.
+        if AppInfo.instancesSocialToken != nil {
+          instancesListView
+        }
       }
       .formStyle(.grouped)
       .navigationTitle("timeline.add-remote.title")
