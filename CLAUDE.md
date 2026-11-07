@@ -4,71 +4,86 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-IceCubesApp is a multiplatform Mastodon client built entirely in SwiftUI. It's an open-source native Apple application that runs on iOS, iPadOS, macOS, and visionOS.
+IceCubesApp is a multiplatform Mastodon client built entirely in SwiftUI. It runs on iOS, iPadOS, visionOS, and on macOS through Mac Catalyst. The packages declare iOS and visionOS only.
 
-## Build Commands
+## Setup
 
-### Building for iOS Simulator
-To build IceCubesApp for iPhone Air simulator:
+- Copy `IceCubesApp.xcconfig.template` to `IceCubesApp.xcconfig` (gitignored) and set `DEVELOPMENT_TEAM` and `BUNDLE_ID_PREFIX`. Debug builds use that file; Release builds use `IceCubesApp-release.xcconfig`.
+- The app group (`group.$(BUNDLE_ID_PREFIX).IceCubesApp`) and the keychain access group (`$(AppIdentifierPrefix)$(BUNDLE_ID_PREFIX).IceCubesApp`) come from build settings through each target's Info.plist. Code reads them as `AppInfo.appGroup` and `AppInfo.keychainGroup`. Never hardcode a team ID, bundle prefix or group name in Swift.
+- Third-party service keys (RevenueCat, TelemetryDeck, WishKit, instances.social) live in `Secrets.xcconfig` (gitignored; copy `Secrets.xcconfig.template`). They reach code through the app's Info.plist as `AppInfo.revenueCatKey`, `AppInfo.telemetryDeckAppID`, `AppInfo.wishKitAPIKey` and `AppInfo.instancesSocialToken`. Each one is optional: a service without a key stays off, so code must handle `nil`. For example, check `Purchases.isConfigured` before touching `Purchases.shared`.
+
+## Build and Test
+
+Use the MobileBuildMCP tools when they're available, otherwise `xcodebuild`. Any available simulator works (`xcrun simctl list devices available`).
+
+### Build the app
 ```bash
-mcp__XcodeBuildMCP__build_sim_name_proj projectPath: "/Users/thomas/Documents/Dev/Open Source/IceCubesApp/IceCubesApp.xcodeproj" scheme: "IceCubesApp" simulatorName: "iPhone Air"
+xcodebuild build -project IceCubesApp.xcodeproj -scheme IceCubesApp -destination 'platform=iOS Simulator,name=iPhone Air,OS=latest'
 ```
+Build the app **signed** (the default). Don't pass `CODE_SIGNING_ALLOWED=NO` for a build you install: an unsigned build has no keychain entitlement, so sign-ins are lost on every reinstall.
 
+### Run tests
+Package test schemes: `AccountTests`, `EnvTests`, `ModelsTests`, `NetworkClientTests`, `StatusKitTests`, `TimelineTests`.
+```bash
+xcodebuild test -project IceCubesApp.xcodeproj -scheme TimelineTests -destination 'platform=iOS Simulator,name=iPhone Air,OS=latest' CODE_SIGNING_ALLOWED=NO
+```
+Skipping signing is fine for test runs.
 
-### Running Tests
-- **All tests**: Run through Xcode's Test navigator
-- **Specific package tests (XcodeBuildMCP on simulator)**:
-  ```bash
-  # Set defaults once per session
-  mcp__XcodeBuildMCP__session-set-defaults projectPath: "/Users/thomas/Documents/Dev/Open Source/IceCubesApp/IceCubesApp.xcodeproj" simulatorName: "iPhone Air"
+### Code formatting
+The project's formatter is SwiftFormat (`brew install swiftformat`), configured by `.swiftformat` with 2-space indentation. It isn't enforced yet: `swiftformat --lint .` flags 303 of 433 files until a one-time reformat lands in its own PR (#11 in `TECH_DEBT.md`). Until then, match the style of the code around your change, and **don't run SwiftFormat over whole files**: it buries the real change in reformatting.
 
-  # Then run any package test scheme
-  mcp__XcodeBuildMCP__test_sim scheme: "AccountTests"
-  mcp__XcodeBuildMCP__test_sim scheme: "ModelsTests"
-  mcp__XcodeBuildMCP__test_sim scheme: "NetworkClientTests"
-  mcp__XcodeBuildMCP__test_sim scheme: "TimelineTests"
-  mcp__XcodeBuildMCP__test_sim scheme: "EnvTests"
-  ```
+## Localization
 
-### Code Formatting
-The project uses SwiftFormat with 2-space indentation. Configuration is in `.swiftformat`.
+All strings are in `IceCubesApp/Resources/Localization/Localizable.xcstrings`: source `en`, plus `en-GB` and 17 translated languages.
+
+- New strings use symbolic keys: lowercase, dot-separated, hyphenated words, such as `settings.timeline.sync-position` and its footer `settings.timeline.sync-position-footer`. Don't use the English sentence as the key; the older English-keyed strings are legacy.
+- Each new key gets `extractionState: "manual"`, an `en` value, an `en-GB` value in British spelling (Favourites, Colour), and every other language, all with `state: "translated"`.
+- Edit the catalog without reformatting it. Load it as JSON, insert the new key at its case-insensitive sorted position (not at the end), and write it back with `json.dumps(d, indent=2, ensure_ascii=False, separators=(",", " : "))` and no trailing newline. That matches Xcode's output byte for byte, so the diff shows only the new lines.
+- The `validate_translations` workflow checks for missing translations on pull requests.
 
 ## Architecture
 
-### Modular Package Structure
-The app is organized into Swift Packages under `/Packages/`:
+### Packages
+The app target (`IceCubesApp/`) is a thin shell. Features live in 13 local Swift packages under `Packages/`, and dependencies only point downward:
 
-- **Models**: Data models and API structures for Mastodon entities
-- **Network**: API client implementation with support for Mastodon, DeepL, and OpenAI APIs
-- **Env**: Environment objects, app-wide state, and dependency injection
-- **DesignSystem**: Theming, colors, fonts, and reusable UI components
-- **Account**: User profile views and account management
-- **Timeline**: Timeline views, filtering, and unread status tracking
-- **StatusKit**: Status/post composition and display components
-- **Notifications**: Notification views and handling
-- **MediaUI**: Media viewing with zoom, video playback, and sharing
+- **Models**: Codable Mastodon types, SwiftData models (`Draft`, `LocalTimeline`, `TagGroup`, `RecentTag`, `MetricsNotificationGroup`), `HTMLString`, `AppInfo`
+- **NetworkClient**: `MastodonClient`, one `Endpoint` enum per API area, plus DeepL, OpenAI and instances.social clients
+- **Env**: shared `@Observable` services (`CurrentAccount`, `CurrentInstance`, `UserPreferences`, `StreamWatcher`, `PushNotificationsService`, `ToastCenter` and more) and the router (`RouterDestination`, `SheetDestination`, `RouterPath`)
+- **DesignSystem**: `Theme`, fonts, avatars, emoji text and reusable components
+- **AppAccount**: `AppAccountsManager` (multiple accounts, tokens in the keychain) and the account switcher
+- **MediaUI**: the full-screen media viewer
+- **StatusKit**: status rows, status detail, the post editor (`EditorStore`), polls and embeds
+- **Timeline**: timeline views, plus actors for fetching, filtering, caching (Bodega/SQLite) and Home marker sync
+- **Account**, **Notifications**, **Conversations**, **Explore**, **Lists**: feature screens. Explore and Lists also depend on Account.
 
-### Key Architectural Patterns (Legacy)
-The codebase contains legacy MVVM patterns, but **new features should NOT use ViewModels**.
+### How the pieces connect
+- **Dependency injection:** `IceCubesApp` owns the shared services and injects them with `withAppDependencyGraph` in `IceCubesApp/App/Router/AppRegistry.swift`. Sheets and the extra Catalyst/visionOS windows use `withEnvironments()`, so a new service has to be added to both.
+- **Routing:** feature packages push `RouterDestination` and `SheetDestination` values onto `RouterPath` without importing each other. Only `AppRegistry.swift` maps destinations to views, so a new screen needs a case in `Packages/Env/Sources/Env/Router.swift` and a mapping in `AppRegistry.swift`.
+- **Account switching:** setting `AppAccountsManager.currentAccount` creates a new `MastodonClient`, and a `.task(id:)` in `withAppDependencyGraph` points the other services at it.
+- **Live updates:** `StreamWatcher` keeps a streaming connection open and publishes `latestEvent`, which the timeline, notification and detail views observe.
 
-- **Legacy**: Some older views still use ViewModels (being phased out)
-- **Modern Approach**: Views as pure state expressions using SwiftUI primitives
-- **Environment Objects**: Used for dependency injection (Router, CurrentAccount, Theme, etc.)
-- **Swift Concurrency**: Async/await throughout for API calls
-- **Observation Framework**: Uses `@Observable` for services injected via Environment
+### Architectural patterns
+The codebase contains legacy MVVM, but **new features should NOT use ViewModels**. Nine remain (`TimelineViewModel`, `StatusRowViewModel`, `StatusDetailViewModel` and six small ones), tracked in `TECH_DEBT.md`.
 
-### App Extensions
-- **NotificationService**: Handles push notification decryption and formatting
-- **ShareExtension**: Enables sharing content to the app
-- **ActionExtension**: Quick actions from share sheet
-- **WidgetsExtension**: Home screen widgets for timeline, mentions, and accounts
+- **Modern approach:** views as pure state expressions using SwiftUI primitives
+- **Environment:** `@Observable` services injected with `.environment(_:)`. In views, prefer `@Environment` over calling `.shared`.
+- **Swift Concurrency:** async/await throughout; the packages build in the Swift 6 language mode
 
-### Important Implementation Details
-- **Multi-account**: Managed through `AppAccountsManager` with secure storage
-- **Push Notifications**: Custom proxy server implementation for privacy
-- **Theme System**: Extensive customization with 40+ app icons
-- **Translation**: Supports DeepL API and instance-provided translations
-- **AI Features**: OpenAI integration for alt text generation
+### App extensions and other targets
+- **IceCubesNotifications**: decrypts Web Push payloads (relayed through a proxy server for privacy) and formats notifications
+- **IceCubesShareExtension**: hosts the post editor for shared content
+- **IceCubesActionExtension**: a share-sheet action
+- **IceCubesAppWidgetsExtension**: account, mentions, latest posts, hashtag and list widgets
+- **IceCubesAppIntents/**: App Intents and Shortcuts, compiled into the app target
+
+### Other details
+- **Theme system:** extensive customization with 40+ app icons
+- **Translation:** DeepL API and instance-provided translations
+- **AI features:** OpenAI integration for alt-text generation
+
+## Tech Debt
+
+`TECH_DEBT.md` lists known debt with scores, a phased plan, and baseline counts (empty `catch {}`, `.shared` calls, ViewModels and more) that should only go down. Don't add to those counts in new code.
 
 ## Modern SwiftUI Architecture Guidelines (2025)
 
@@ -160,19 +175,10 @@ struct TimelineView: View {
 ### Build Verification Process
 **IMPORTANT**: When editing code, you MUST:
 
-1. Build the project after making changes using XcodeBuildMCP commands
+1. Build the project after making changes (see "Build and Test" above)
 2. Fix any compilation errors before proceeding
 3. Run relevant tests if modifying existing functionality
 4. Ensure code follows modern SwiftUI patterns
-
-Example workflow:
-```bash
-# Build the main app
-mcp__XcodeBuildMCP__build_mac_proj projectPath: "/path/to/IceCubesApp.xcodeproj" scheme: "IceCubesApp"
-
-# Or for iOS simulator
-mcp__XcodeBuildMCP__build_ios_sim_name_proj projectPath: "/path/to/IceCubesApp.xcodeproj" scheme: "IceCubesApp" simulatorName: "iPhone Air"
-```
 
 ### Implementation Examples
 

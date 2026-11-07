@@ -20,7 +20,11 @@ let package = Package(
     .package(name: "Models", path: "../Models"),
     .package(name: "Env", path: "../Env"),
     .package(url: "https://github.com/kean/Nuke", exact: "13.2.0"),
-    .package(url: "https://github.com/Dimillian/EmojiText", branch: "fix-ios26"),
+    // Head of the fork's `fix-ios26` branch. Pinned so dependency updates can't move it;
+    // switch back to a version once the fix is released upstream.
+    .package(
+      url: "https://github.com/Dimillian/EmojiText",
+      revision: "3b11459a19c9406176a08b0f0599b98f88113296"),
     .package(url: "https://github.com/kaishin/Gifu.git", from: "4.0.1"),
   ],
   targets: [

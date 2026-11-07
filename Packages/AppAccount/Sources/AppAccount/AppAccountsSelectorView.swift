@@ -138,7 +138,9 @@ public struct AppAccountsSelectorView: View {
           Section {
             settingsButton
             aboutButton
-            supportButton
+            if AppInfo.revenueCatKey != nil {
+              supportButton
+            }
           }
           #if os(visionOS)
             .foregroundStyle(theme.labelColor)

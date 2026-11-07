@@ -76,7 +76,8 @@ struct AddAccountView: View {
         }
         if let instance {
           InstanceInfoSection(instance: instance)
-        } else {
+        } else if AppInfo.instancesSocialToken != nil {
+          // Suggestions come from instances.social, which needs `INSTANCES_SOCIAL_TOKEN`.
           instancesListView
         }
       }

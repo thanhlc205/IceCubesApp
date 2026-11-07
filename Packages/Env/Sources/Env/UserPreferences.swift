@@ -100,7 +100,7 @@ import SwiftUI
     }
   }
 
-  public static let sharedDefault = UserDefaults(suiteName: "group.com.thomasricouard.IceCubesApp")
+  public static let sharedDefault = UserDefaults(suiteName: AppInfo.appGroup)
   public static let shared = UserPreferences()
   private let storage = Storage()
 

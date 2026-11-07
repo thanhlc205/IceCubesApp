@@ -90,6 +90,7 @@ fastlane/test_output
 iOSInjectionProject/
 .DS_Store
 IceCubesApp.xcconfig
+Secrets.xcconfig
 *.resolved
 buildServer.json
 /.playwright-mcp

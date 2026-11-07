@@ -106,6 +106,8 @@ struct SupportAppView: View {
   }
 
   private func purchase(product: StoreProduct) async {
+    // `Purchases.shared` traps until RevenueCat is configured, which needs `REVENUECAT_API_KEY`.
+    guard Purchases.isConfigured else { return }
     if !isProcessingPurchase {
       isProcessingPurchase = true
       do {
@@ -121,6 +123,10 @@ struct SupportAppView: View {
   }
 
   private func fetchStoreProducts() {
+    guard Purchases.isConfigured else {
+      loadingProducts = false
+      return
+    }
     Purchases.shared.getProducts(Tip.allCases.map(\.productId)) { products in
       subscription = products.first(where: { $0.productIdentifier == Tip.supporter.productId })
       self.products = products.filter { $0.productIdentifier != Tip.supporter.productId }.sorted(
@@ -132,6 +138,7 @@ struct SupportAppView: View {
   }
 
   private func refreshUserInfo() {
+    guard Purchases.isConfigured else { return }
     Purchases.shared.getCustomerInfo { info, _ in
       customerInfo = info
     }
@@ -247,6 +254,7 @@ struct SupportAppView: View {
       HStack {
         Spacer()
         Button {
+          guard Purchases.isConfigured else { return }
           Purchases.shared.restorePurchases { info, _ in
             customerInfo = info
           }
