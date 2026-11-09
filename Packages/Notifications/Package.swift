@@ -37,6 +37,10 @@ let package = Package(
         .swiftLanguageMode(.v6),
         .defaultIsolation(MainActor.self)
       ]
-    )
+    ),
+    .testTarget(
+      name: "NotificationsTests",
+      dependencies: ["Notifications"]
+    ),
   ]
 )

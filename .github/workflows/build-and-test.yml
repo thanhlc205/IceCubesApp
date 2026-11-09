@@ -55,7 +55,7 @@ jobs:
         run: |
           set -o pipefail
           failed=()
-          for scheme in AccountTests EnvTests ModelsTests NetworkClientTests StatusKitTests TimelineTests; do
+          for scheme in AccountTests AppAccountTests EnvTests ModelsTests NetworkClientTests NotificationsTests StatusKitTests TimelineTests; do
             echo "::group::$scheme"
             if ! xcodebuild test $XCODEBUILD_FLAGS -scheme "$scheme" -destination "$DESTINATION" | xcbeautify; then
               failed+=("$scheme")
