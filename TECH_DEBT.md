@@ -25,7 +25,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 | 3 | `CLAUDE.md` is stale, and project conventions live only in one person's local Claude memory | Docs | 3 | 2 | 1 | **25** | ~1 h | Claude sessions and the PR reviewer start with wrong build commands and don't know the localization rules | Done (Phase 0) |
 | 4 | Upstream's service keys and IDs in the source | Infra | 2 | 4 | 2 | **24** | ~2 h | Each launch sends telemetry to an account this fork doesn't control; a shipped build's purchases would go there too | Done (Phase 0) |
 | 5 | Errors are swallowed instead of logged or shown | Code | 3 | 4 | 3 | **21** | ~1 day for a first pass | Failures look like nothing happened, to users and to developers | Open |
-| 6 | 7 of 13 packages have no tests, and the app has no test target | Test | 3 | 4 | 3 | **21** | 1–2 days for the first two suites | Notifications and account switching change with no safety net | Open |
+| 6 | 7 of 13 packages have no tests, and the app has no test target | Test | 3 | 4 | 3 | **21** | 1–2 days for the first two suites | Notifications and account switching change with no safety net | First two suites done (Phase 1); `AppRegistry` next |
 | 7 | EmojiText follows a branch on a fork | Dependency | 1 | 3 | 1 | **20** | 15 min | The next dependency update moves it silently; if the branch is deleted, the build breaks | Done (Phase 0) |
 | 8 | Two hand-kept lists of injected services, which already differ | Architecture | 2 | 3 | 2 | **20** | ~½ day | A service added to only one list crashes any sheet or window that reads it | Open |
 | 9 | `asyncAfter` timing hacks | Code | 2 | 3 | 2 | **20** | ~½ day | On slow devices, steps can run in the wrong order | Open |
@@ -94,6 +94,16 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 ### 6. Missing tests
 - **Evidence:** AppAccount, Conversations, DesignSystem, Explore, Lists, MediaUI and Notifications have no tests, and the app target has no test target. The 120 existing tests are in Account, Env, Models, NetworkClient, StatusKit and Timeline.
 - **Fix, in this order:** `NotificationsListDataSource` (512 lines of grouping and pagination), then `AppAccountsManager` (switching, adding and deleting accounts), then the destination-to-view mapping in `AppRegistry`.
+- **Progress (2026-11-09):**
+  - `NotificationsTests` (20 tests) cover `NotificationsListDataSource` on both notification APIs: grouping, type filters, filtered statuses, paging, pull to refresh, streamed notifications and the read marker. They run a real `MastodonClient`, and a `URLProtocol` stub answers its requests with Mastodon-shaped JSON.
+  - `AppAccountTests` (7 tests) cover adding, switching and deleting accounts in `AppAccountsManager`.
+  - CI runs both schemes. Package tests went from 120 to 147.
+  - Each suite was checked by breaking the code on purpose: all 13 deliberate bugs made a test fail.
+  - The suites add one `.shared` call to the baseline count: the notification tests must set the `CurrentInstance` singleton that the data source reads (#14).
+- **Found while testing:**
+  - Before Mastodon 4.3 the app groups notifications itself, and it offers another page only when the grouped rows fill a page. A full page of 30 that groups into 29 rows shows no more, so older notifications can't be reached. This path is used whenever the server's version reads below 4.3 or couldn't be fetched. A test records it with `withKnownIssue`.
+  - Package tests can't use the keychain: every write fails with `errSecMissingEntitlement` (-34018). `add(account:)` doesn't notice a failed write, so the account appears but is gone after a relaunch (see #5).
+- **Not covered yet:** saving and restoring accounts across launches, which needs an injectable account store in `AppAccountsManager` or a test target hosted in the app; the `AppRegistry` mapping.
 
 ### 7. EmojiText follows a branch on a fork
 - **Evidence:** `Packages/DesignSystem/Package.swift` depends on `Dimillian/EmojiText` at `branch: "fix-ios26"`. `Package.resolved` currently locks it to commit `3b11459`.
