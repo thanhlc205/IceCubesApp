@@ -25,7 +25,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 | 3 | `CLAUDE.md` is stale, and project conventions live only in one person's local Claude memory | Docs | 3 | 2 | 1 | **25** | ~1 h | Claude sessions and the PR reviewer start with wrong build commands and don't know the localization rules | Done (Phase 0) |
 | 4 | Upstream's service keys and IDs in the source | Infra | 2 | 4 | 2 | **24** | ~2 h | Each launch sends telemetry to an account this fork doesn't control; a shipped build's purchases would go there too | Done (Phase 0) |
 | 5 | Errors are swallowed instead of logged or shown | Code | 3 | 4 | 3 | **21** | ~1 day for a first pass | Failures look like nothing happened, to users and to developers | Open |
-| 6 | 7 of 13 packages have no tests, and the app has no test target | Test | 3 | 4 | 3 | **21** | 1–2 days for the first two suites | Notifications and account switching change with no safety net | First two suites done (Phase 1); `AppRegistry` next |
+| 6 | 7 of 13 packages have no tests, and the app has no test target | Test | 3 | 4 | 3 | **21** | 1–2 days for the first two suites | Notifications and account switching change with no safety net | Three suites done: notifications, accounts, `AppRegistry` (Phase 1) |
 | 7 | EmojiText follows a branch on a fork | Dependency | 1 | 3 | 1 | **20** | 15 min | The next dependency update moves it silently; if the branch is deleted, the build breaks | Done (Phase 0) |
 | 8 | Two hand-kept lists of injected services, which already differ | Architecture | 2 | 3 | 2 | **20** | ~½ day | A service added to only one list crashes any sheet or window that reads it | Open |
 | 9 | `asyncAfter` timing hacks | Code | 2 | 3 | 2 | **20** | ~½ day | On slow devices, steps can run in the wrong order | Open |
@@ -103,7 +103,14 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 - **Found while testing:**
   - Before Mastodon 4.3 the app groups notifications itself, and it offers another page only when the grouped rows fill a page. A full page of 30 that groups into 29 rows shows no more, so older notifications can't be reached. This path is used whenever the server's version reads below 4.3 or couldn't be fetched. A test records it with `withKnownIssue`.
   - Package tests can't use the keychain: every write fails with `errSecMissingEntitlement` (-34018). `add(account:)` doesn't notice a failed write, so the account appears but is gone after a relaunch (see #5).
-- **Not covered yet:** saving and restoring accounts across launches, which needs an injectable account store in `AppAccountsManager` or a test target hosted in the app; the `AppRegistry` mapping.
+- **Progress (2026-11-09, `AppRegistry`):**
+  - The app now has a test target, `IceCubesAppTests`, hosted in the app. The `IceCubesApp` scheme runs it, and so does CI.
+  - `RouterDestinationTests` pushes each of the 29 navigation cases through `withAppRouter()`, in a window set up the way a tab sets one up. It checks the screen by the request it sends, such as `/accounts/107/following` for `.following(id: "107")`, or by its title when the screen loads nothing.
+  - `SheetDestinationTests` opens and closes each of the 25 sheets through `withSheetDestinations`. These only check that a sheet shows without crashing. They don't tell which screen opened.
+  - A destination added to `Router.swift` doesn't compile until the tests have a sample for it.
+  - 11 deliberate mapping bugs all made a test fail. Each was caught by the case for its destination. They included swapped modes (following and followers), dropped arguments (the hashtag's account, the notification list's account), wrong screens, and a service missing from the main window, which crashes the screens that read it.
+  - The test harness passes the same ten singletons that `IceCubesApp` passes. It uses `.shared` to do it (#14). The baseline below doesn't count them, because it measures neither `IceCubesAppTests/` nor the `.shared` shorthand.
+- **Not covered yet:** saving and restoring accounts across launches. That needs an injectable account store in `AppAccountsManager`, or signed runs of the app tests, since CI builds unsigned. The separate editor and media windows, which don't inherit the main window's services (see #8).
 
 ### 7. EmojiText follows a branch on a fork
 - **Evidence:** `Packages/DesignSystem/Package.swift` depends on `Dimillian/EmojiText` at `branch: "fix-ios26"`. `Package.resolved` currently locks it to commit `3b11459`.
@@ -113,6 +120,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 ### 8. Two hand-kept lists of injected services
 - **Evidence:** in [AppRegistry.swift](IceCubesApp/App/Router/AppRegistry.swift), `withAppDependencyGraph` sets up the main window. `withEnvironments()` is used 30 times, for sheets and for the separate editor and media windows. It leaves out `StreamWatcher`, `AppIntentService` and `\.isSupporter`.
 - **Fix:** keep one `AppDependencies` value applied by a single modifier. Sheets already inherit the environment from the view that presents them, so most of the 30 sheet calls can probably go. Check each one before removing it.
+- **Check:** `SheetDestinationTests` opens every sheet inside the main window's services, so after removing a sheet's `.withEnvironments()` it fails if that sheet needed something only that call provided. The separate windows aren't covered.
 
 ### 9. `asyncAfter` timing hacks
 - **Evidence:** 12 `DispatchQueue.main.asyncAfter` calls. For example, tapping a push notification switches account, then waits 0.2 s before changing tab ([IceCubesApp+Scene.swift:54](IceCubesApp/App/Main/IceCubesApp+Scene.swift:54)).

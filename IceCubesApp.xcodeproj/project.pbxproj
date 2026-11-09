@@ -81,6 +81,13 @@
 			remoteGlobalIDString = 9FAD858729743F7400496AB1;
 			remoteInfo = IceCubesShareExtension;
 		};
+		A1CE7E5701AB000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9FBFE631292A715500C250E9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9FBFE638292A715500C250E9;
+			remoteInfo = IceCubesApp;
+		};
 		E9DF420529830FEC0003AAD2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 9FBFE631292A715500C250E9 /* Project object */;
@@ -132,6 +139,7 @@
 		9FD542E52962D2CE0045321A /* Lists */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Lists; path = Packages/Lists; sourceTree = "<group>"; };
 		9FE0346A2ADD59AC00529EA8 /* MediaUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = MediaUI; path = Packages/MediaUI; sourceTree = "<group>"; };
 		9FE3DB55296FEF5800628CB0 /* AppAccount */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AppAccount; path = Packages/AppAccount; sourceTree = "<group>"; };
+		A1CE7E5701AB000000000002 /* IceCubesAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IceCubesAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD31E2E5297FB68B00A4BE29 /* IceCubesApp.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IceCubesApp.xcconfig; sourceTree = "<group>"; };
 		E9DB78972E004E4C004EAC2E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		E9DF41FA29830FEC0003AAD2 /* IceCubesActionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = IceCubesActionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -216,6 +224,7 @@
 		9FF305672CCA8515007B6B8F /* IceCubesActionExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (9FF3056D2CCA8515007B6B8F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = IceCubesActionExtension; sourceTree = "<group>"; };
 		9FF305712CCA8528007B6B8F /* IceCubesShareExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (9FF305732CCA8528007B6B8F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = IceCubesShareExtension; sourceTree = "<group>"; };
 		9FF305C02CCA8569007B6B8F /* IceCubesApp */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (9FF305FB2CCA856A007B6B8F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 9FF305FC2CCA856A007B6B8F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 9FF305FD2CCA856A007B6B8F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = IceCubesApp; sourceTree = "<group>"; };
+		A1CE7E5701AB000000000003 /* IceCubesAppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = IceCubesAppTests; sourceTree = "<group>"; };
 		E9FB0ACA2E09B13C002D232F /* AlternateIcons */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AlternateIcons; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -289,6 +298,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1CE7E5701AB000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9DF41F729830FEC0003AAD2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -315,6 +331,7 @@
 				9FF305512CCA8464007B6B8F /* IceCubesNotifications */,
 				9FF305712CCA8528007B6B8F /* IceCubesShareExtension */,
 				9FF3053B2CCA8459007B6B8F /* IceCubesAppWidgetsExtension */,
+				A1CE7E5701AB000000000003 /* IceCubesAppTests */,
 				9FBFE63A292A715500C250E9 /* Products */,
 				9FBFE64C292A72BD00C250E9 /* Frameworks */,
 				9FE3DB55296FEF5800628CB0 /* AppAccount */,
@@ -341,6 +358,7 @@
 				9FAD858829743F7400496AB1 /* IceCubesShareExtension.appex */,
 				E9DF41FA29830FEC0003AAD2 /* IceCubesActionExtension.appex */,
 				9F7788C52BE652B1004E6BEF /* IceCubesAppWidgetsExtensionExtension.appex */,
+				A1CE7E5701AB000000000002 /* IceCubesAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -487,6 +505,27 @@
 			productReference = 9FBFE639292A715500C250E9 /* Ice Cubes.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A1CE7E5701AB000000000007 /* IceCubesAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1CE7E5701AB00000000000B /* Build configuration list for PBXNativeTarget "IceCubesAppTests" */;
+			buildPhases = (
+				A1CE7E5701AB000000000006 /* Sources */,
+				A1CE7E5701AB000000000004 /* Frameworks */,
+				A1CE7E5701AB000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1CE7E5701AB000000000008 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A1CE7E5701AB000000000003 /* IceCubesAppTests */,
+			);
+			name = IceCubesAppTests;
+			productName = IceCubesAppTests;
+			productReference = A1CE7E5701AB000000000002 /* IceCubesAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E9DF41F929830FEC0003AAD2 /* IceCubesActionExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E9DF420A29830FEC0003AAD2 /* Build configuration list for PBXNativeTarget "IceCubesActionExtension" */;
@@ -532,6 +571,10 @@
 					};
 					9FBFE638292A715500C250E9 = {
 						CreatedOnToolsVersion = 14.1;
+					};
+					A1CE7E5701AB000000000007 = {
+						CreatedOnToolsVersion = 27.2;
+						TestTargetID = 9FBFE638292A715500C250E9;
 					};
 					E9DF41F929830FEC0003AAD2 = {
 						CreatedOnToolsVersion = 14.2;
@@ -580,6 +623,7 @@
 				9F2A5415296AB631009B2D7C /* IceCubesNotifications */,
 				9FAD858729743F7400496AB1 /* IceCubesShareExtension */,
 				9F7788C42BE652B1004E6BEF /* IceCubesAppWidgetsExtensionExtension */,
+				A1CE7E5701AB000000000007 /* IceCubesAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -612,6 +656,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				E9DB78982E004E4C004EAC2E /* AppIcon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1CE7E5701AB000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -653,6 +704,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1CE7E5701AB000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9DF41F629830FEC0003AAD2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -685,6 +743,11 @@
 			);
 			target = 9FAD858729743F7400496AB1 /* IceCubesShareExtension */;
 			targetProxy = 9FAD859029743F7400496AB1 /* PBXContainerItemProxy */;
+		};
+		A1CE7E5701AB000000000008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9FBFE638292A715500C250E9 /* IceCubesApp */;
+			targetProxy = A1CE7E5701AB000000000001 /* PBXContainerItemProxy */;
 		};
 		E9DF420629830FEC0003AAD2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1197,6 +1260,50 @@
 			};
 			name = Release;
 		};
+		A1CE7E5701AB000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).IceCubesAppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ice Cubes.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Ice Cubes";
+			};
+			name = Debug;
+		};
+		A1CE7E5701AB00000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).IceCubesAppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ice Cubes.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Ice Cubes";
+			};
+			name = Release;
+		};
 		E9DF420829830FEC0003AAD2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1316,6 +1423,15 @@
 			buildConfigurations = (
 				9FBFE649292A715600C250E9 /* Debug */,
 				9FBFE64A292A715600C250E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1CE7E5701AB00000000000B /* Build configuration list for PBXNativeTarget "IceCubesAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1CE7E5701AB000000000009 /* Debug */,
+				A1CE7E5701AB00000000000A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

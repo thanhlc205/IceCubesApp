@@ -32,8 +32,16 @@ Skipping signing is fine for test runs. To run one Swift Testing test, pass its 
 - **Network:** to test code that calls `MastodonClient`, answer its requests with a `URLProtocol` stub, as `Packages/Notifications/Tests/NotificationsTests/StubServer.swift` does, and mark the suite `.serialized`.
 - **Keychain:** package tests run without a host app, so every keychain write fails with `errSecMissingEntitlement` (-34018), signed or not. Code that saves to the keychain can't be tested at this level yet.
 
+App tests: the `IceCubesApp` scheme's test action runs `IceCubesAppTests/`, a unit-test bundle hosted in the app (`@testable import Ice_Cubes`, the app's module name). Its `RouterHarness` shows `withAppRouter()` and `withSheetDestinations` in a window the way a tab does, inside the main window's services, and its own `StubServer` answers every request.
+```bash
+xcodebuild test -project IceCubesApp.xcodeproj -scheme IceCubesApp -destination 'platform=iOS Simulator,name=iPhone Air,OS=latest' CODE_SIGNING_ALLOWED=NO
+```
+- The tests install and launch the real app. An unsigned install has no keychain entitlement, so run them on a simulator without real sign-ins, or build signed.
+- A new `RouterDestination` or `SheetDestination` won't compile until `RouterDestinationTests.swift` or `SheetDestinationTests.swift` has a sample for it. Give a navigation destination the request its screen sends first, or its title if it loads nothing.
+- Every suite in the target nests in `AppTests`, which is `.serialized`, because they share the stub and the app's singletons.
+
 ### CI
-`.github/workflows/build-and-test.yml` builds the `IceCubesApp` scheme unsigned and runs all eight test schemes on every pull request and every push to `main`. It runs on GitHub's `xcode-27` image with Xcode 27.2, and tests run on the iOS 27.0 simulator because the image has no 27.2 runtime. A pull request should be green there before it merges.
+`.github/workflows/build-and-test.yml` builds the `IceCubesApp` scheme unsigned and runs the app tests and all eight package test schemes on every pull request and every push to `main`. It runs on GitHub's `xcode-27` image with Xcode 27.2, and tests run on the iOS 27.0 simulator because the image has no 27.2 runtime. A pull request should be green there before it merges.
 
 ### Code formatting
 The project's formatter is SwiftFormat (`brew install swiftformat`), configured by `.swiftformat` with 2-space indentation. It isn't enforced yet: `swiftformat --lint .` flags 303 of 433 files until a one-time reformat lands in its own PR (#11 in `TECH_DEBT.md`). Until then, match the style of the code around your change, and **don't run SwiftFormat over whole files**: it buries the real change in reformatting.

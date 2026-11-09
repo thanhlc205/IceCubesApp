@@ -51,11 +51,12 @@ jobs:
           set -o pipefail
           xcodebuild build $XCODEBUILD_FLAGS -scheme IceCubesApp -destination "$DESTINATION" | xcbeautify
 
-      - name: Run package tests
+      - name: Run tests
+        # IceCubesApp runs the app-hosted IceCubesAppTests; the rest are package test schemes.
         run: |
           set -o pipefail
           failed=()
-          for scheme in AccountTests AppAccountTests EnvTests ModelsTests NetworkClientTests NotificationsTests StatusKitTests TimelineTests; do
+          for scheme in IceCubesApp AccountTests AppAccountTests EnvTests ModelsTests NetworkClientTests NotificationsTests StatusKitTests TimelineTests; do
             echo "::group::$scheme"
             if ! xcodebuild test $XCODEBUILD_FLAGS -scheme "$scheme" -destination "$DESTINATION" | xcbeautify; then
               failed+=("$scheme")
