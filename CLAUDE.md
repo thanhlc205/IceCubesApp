@@ -29,6 +29,9 @@ xcodebuild test -project IceCubesApp.xcodeproj -scheme TimelineTests -destinatio
 ```
 Skipping signing is fine for test runs.
 
+### CI
+`.github/workflows/build-and-test.yml` builds the `IceCubesApp` scheme unsigned and runs all six test schemes on every pull request and every push to `main`. It runs on GitHub's `xcode-27` image with Xcode 27.2, and tests run on the iOS 27.0 simulator because the image has no 27.2 runtime. A pull request should be green there before it merges.
+
 ### Code formatting
 The project's formatter is SwiftFormat (`brew install swiftformat`), configured by `.swiftformat` with 2-space indentation. It isn't enforced yet: `swiftformat --lint .` flags 303 of 433 files until a one-time reformat lands in its own PR (#11 in `TECH_DEBT.md`). Until then, match the style of the code around your change, and **don't run SwiftFormat over whole files**: it buries the real change in reformatting.
 
