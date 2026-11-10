@@ -2,6 +2,7 @@ import Env
 import Foundation
 import Models
 import NetworkClient
+import NetworkStubs
 import Testing
 
 @testable import Notifications
@@ -19,11 +20,11 @@ private func allTypes(except type: String) -> Set<String> {
 @MainActor
 @Suite(.serialized)
 struct NotificationsListDataSourceTests {
-  private let client = MastodonClient(server: "stub.example")
+  private let client = MastodonClient(server: StubServer.host)
   private let dataSource = NotificationsListDataSource()
 
   init() {
-    StubServer.install()
+    StubServer.install(everyHost: true)
     StubServer.reset()
   }
 

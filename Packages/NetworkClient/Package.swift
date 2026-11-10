@@ -14,7 +14,12 @@ let package = Package(
     .library(
       name: "NetworkClient",
       targets: ["NetworkClient"]
-    )
+    ),
+    // Test helpers that answer or fail `URLSession.shared` requests. Link it only from tests.
+    .library(
+      name: "NetworkStubs",
+      targets: ["NetworkStubs"]
+    ),
   ],
   dependencies: [
     .package(name: "Models", path: "../Models")
@@ -29,9 +34,15 @@ let package = Package(
         .swiftLanguageMode(.v6)
       ]
     ),
+    .target(
+      name: "NetworkStubs",
+      swiftSettings: [
+        .swiftLanguageMode(.v6)
+      ]
+    ),
     .testTarget(
       name: "NetworkClientTests",
-      dependencies: ["NetworkClient"]
+      dependencies: ["NetworkClient", "NetworkStubs"]
     ),
   ]
 )

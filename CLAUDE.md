@@ -29,10 +29,10 @@ xcodebuild test -project IceCubesApp.xcodeproj -scheme TimelineTests -destinatio
 ```
 Skipping signing is fine for test runs. To run one Swift Testing test, pass its name with parentheses, such as `-only-testing:AppAccountTests/AppAccountsManagerTests/addingAnAccountListsItAndSwitchesToIt()`. Without them the filter matches nothing and the run passes with no tests.
 
-- **Network:** to test code that calls `MastodonClient`, answer its requests with a `URLProtocol` stub, as `Packages/Notifications/Tests/NotificationsTests/StubServer.swift` does, and mark the suite `.serialized`.
+- **Network:** to test code that calls `MastodonClient`, add `.product(name: "NetworkStubs", package: "NetworkClient")` to the test target and point the client at `StubServer.host`. `StubServer` answers with queued JSON and a status code per answer, and records each request; mark the suite `.serialized`. When a request only needs to fail, point the client at `OfflineURLProtocol.host` instead: it fails every request with a connection error and keeps no state. Both live in `Packages/NetworkClient/Sources/NetworkStubs/`; don't copy them into a test target.
 - **Keychain:** package tests run without a host app, so every keychain write fails with `errSecMissingEntitlement` (-34018), signed or not. Code that saves to the keychain can't be tested at this level yet.
 
-App tests: the `IceCubesApp` scheme's test action runs `IceCubesAppTests/`, a unit-test bundle hosted in the app (`@testable import Ice_Cubes`, the app's module name). Its `RouterHarness` shows `withAppRouter()` and `withSheetDestinations` in a window the way a tab does, inside the main window's services, and its own `StubServer` answers every request.
+App tests: the `IceCubesApp` scheme's test action runs `IceCubesAppTests/`, a unit-test bundle hosted in the app (`@testable import Ice_Cubes`, the app's module name). Its `RouterHarness` shows `withAppRouter()` and `withSheetDestinations` in a window the way a tab does, inside the main window's services, and `StubServer` (from `NetworkStubs`, installed with `everyHost: true`) answers every request.
 ```bash
 xcodebuild test -project IceCubesApp.xcodeproj -scheme IceCubesApp -destination 'platform=iOS Simulator,name=iPhone Air,OS=latest' CODE_SIGNING_ALLOWED=NO
 ```
@@ -82,6 +82,7 @@ The codebase contains legacy MVVM, but **new features should NOT use ViewModels*
 - **Modern approach:** views as pure state expressions using SwiftUI primitives
 - **Environment:** `@Observable` services injected with `.environment(_:)`. In views, prefer `@Environment` over calling `.shared`.
 - **Swift Concurrency:** async/await throughout; the packages build in the Swift 6 language mode
+- **Errors:** don't add empty `catch {}` blocks. Log with the package's `Logger` (`Logger.env`, `Logger.account`, `Logger.app`; a package without one gets a `Logger+<Package>.swift` with subsystem `com.icecubesapp`). Services, data controllers and view models log and rethrow, and never show UI. The view catches the error and, when something the user did failed, calls `toastCenter.showFailure(title:error:)` on the `ToastCenter` from its environment. Inside a sheet, show the error in the sheet instead, because toasts draw in the main window behind it.
 
 ### App extensions and other targets
 - **IceCubesNotifications**: decrypts Web Push payloads (relayed through a proxy server for privacy) and formats notifications

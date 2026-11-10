@@ -6,6 +6,7 @@ import Env
 import Models
 import NetworkClient
 import NukeUI
+import OSLog
 import SafariServices
 import SwiftUI
 
@@ -28,6 +29,7 @@ struct AddAccountView: View {
   @State private var signInClient: MastodonClient?
   @State private var instances: [InstanceSocial] = []
   @State private var instanceFetchError: LocalizedStringKey?
+  @State private var signInError: LocalizedStringKey?
   @State private var instanceSocialClient = InstanceSocialClient()
   @State private var searchingTask = Task<Void, Never> {}
   @State private var getInstanceDetailTask = Task<Void, Never> {}
@@ -67,9 +69,13 @@ struct AddAccountView: View {
           .focused($isInstanceURLFieldFocused)
           .onChange(of: instanceName) { _, _ in
             instanceName = cleanServerStr(instanceName)
+            signInError = nil
           }
         if let instanceFetchError {
           Text(instanceFetchError)
+        }
+        if let signInError {
+          Text(signInError)
         }
         if instance != nil || !instanceName.isEmpty {
           signInSection
@@ -284,15 +290,17 @@ struct AddAccountView: View {
   }
 
   private func signIn() async {
-    signInClient = .init(server: sanitizedName)
-    if let oauthURL = try? await signInClient?.oauthURL(),
-      let url = try? await webAuthenticationSession.authenticate(
+    signInError = nil
+    let client = MastodonClient(server: sanitizedName)
+    signInClient = client
+    do {
+      let oauthURL = try await client.oauthURL()
+      let url = try await webAuthenticationSession.authenticate(
         using: oauthURL,
         callbackURLScheme: AppInfo.scheme.replacingOccurrences(of: "://", with: ""))
-    {
       await continueSignIn(url: url)
-    } else {
-      isSigninIn = false
+    } catch {
+      signInFailed(error)
     }
   }
 
@@ -318,7 +326,20 @@ struct AddAccountView: View {
       isSigninIn = false
       dismiss()
     } catch {
-      isSigninIn = false
+      signInFailed(error)
     }
+  }
+
+  /// Closing the sign-in page is the user's choice, so it shows no message.
+  private func signInFailed(_ error: any Error) {
+    isSigninIn = false
+    if error is CancellationError { return }
+    if let error = error as? ASWebAuthenticationSessionError, error.code == .canceledLogin {
+      return
+    }
+    Logger.app.error(
+      "Sign-in to \(sanitizedName, privacy: .private(mask: .hash)) failed: \(String(describing: type(of: error)), privacy: .public) \(String(describing: error))"
+    )
+    signInError = "account.add.error.sign-in-failed"
   }
 }

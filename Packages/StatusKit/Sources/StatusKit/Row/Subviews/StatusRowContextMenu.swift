@@ -14,6 +14,7 @@ struct StatusRowContextMenu: View {
   @Environment(CurrentAccount.self) private var account
   @Environment(CurrentInstance.self) private var currentInstance
   @Environment(StatusDataController.self) private var statusDataController
+  @Environment(ToastCenter.self) private var toastCenter
   @Environment(QuickLook.self) private var quickLook
   @Environment(Theme.self) private var theme
 
@@ -66,7 +67,9 @@ struct StatusRowContextMenu: View {
           Task {
             HapticManager.shared.fireHaptic(.notification(.success))
             SoundEffectManager.shared.playSound(.boost)
-            await statusDataController.toggleReblog(remoteStatus: nil)
+            await toastCenter.run(.boost, undoing: statusDataController.isReblogged) {
+              try await statusDataController.toggleReblog(remoteStatus: nil)
+            }
           }
         } label: {
           boostLabel
@@ -78,7 +81,9 @@ struct StatusRowContextMenu: View {
           Task {
             HapticManager.shared.fireHaptic(.notification(.success))
             SoundEffectManager.shared.playSound(.favorite)
-            await statusDataController.toggleFavorite(remoteStatus: nil)
+            await toastCenter.run(.favorite, undoing: statusDataController.isFavorited) {
+              try await statusDataController.toggleFavorite(remoteStatus: nil)
+            }
           }
         } label: {
           Label(
@@ -91,7 +96,9 @@ struct StatusRowContextMenu: View {
           Task {
             SoundEffectManager.shared.playSound(.bookmark)
             HapticManager.shared.fireHaptic(.notification(.success))
-            await statusDataController.toggleBookmark(remoteStatus: nil)
+            await toastCenter.run(.bookmark, undoing: statusDataController.isBookmarked) {
+              try await statusDataController.toggleBookmark(remoteStatus: nil)
+            }
           }
         } label: {
           Label(

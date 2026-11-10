@@ -208,6 +208,14 @@ public final class MastodonClient: Equatable, Identifiable, Hashable, Sendable {
     let (data, httpResponse) = try await urlSession.data(for: request)
     logger.log(level: .info, "\(request)")
     logResponseOnError(httpResponse: httpResponse, data: data)
+    // Check the status before decoding: some types, such as `Relationship`, give every field a
+    // default and would decode the error body as an empty answer.
+    if let httpResponse = httpResponse as? HTTPURLResponse,
+      !(200..<300).contains(httpResponse.statusCode)
+    {
+      let serverError = try? decoder.decode(ServerError.self, from: data)
+      throw ServerError(error: serverError?.error, httpCode: httpResponse.statusCode)
+    }
     do {
       return try decoder.decode(Entity.self, from: data)
     } catch {

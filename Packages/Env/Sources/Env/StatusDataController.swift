@@ -1,6 +1,7 @@
 import Foundation
 import Models
 import NetworkClient
+import OSLog
 import Observation
 import SwiftUI
 
@@ -14,9 +15,13 @@ public protocol StatusDataControlling {
   var reblogsCount: Int { get set }
   var repliesCount: Int { get set }
 
-  func toggleBookmark(remoteStatus: String?) async
-  func toggleReblog(remoteStatus: String?) async
-  func toggleFavorite(remoteStatus: String?) async
+  /// Each toggle shows the change at once. If the request fails, it undoes its own change,
+  /// logs the error and rethrows it, so the view can tell the user. It flips the state back
+  /// rather than restoring a snapshot, so a second tap or a refresh while the request is in
+  /// flight can leave a different state.
+  func toggleBookmark(remoteStatus: String?) async throws
+  func toggleReblog(remoteStatus: String?) async throws
+  func toggleFavorite(remoteStatus: String?) async throws
 }
 
 @MainActor
@@ -93,7 +98,7 @@ public final class StatusDataControllerProvider {
     content = status.content
   }
 
-  public func toggleFavorite(remoteStatus: String?) async {
+  public func toggleFavorite(remoteStatus: String?) async throws {
     guard client.isAuth else { return }
     isFavorited.toggle()
     let id = remoteStatus ?? status.id
@@ -106,11 +111,13 @@ public final class StatusDataControllerProvider {
       updateFrom(status: status)
     } catch {
       isFavorited.toggle()
-      favoritesCount += isFavorited ? -1 : 1
+      favoritesCount += isFavorited ? 1 : -1
+      log(error, action: "favourite")
+      throw error
     }
   }
 
-  public func toggleReblog(remoteStatus: String?) async {
+  public func toggleReblog(remoteStatus: String?) async throws {
     guard client.isAuth else { return }
     isReblogged.toggle()
     let id = remoteStatus ?? status.id
@@ -123,11 +130,13 @@ public final class StatusDataControllerProvider {
       updateFrom(status: status.reblog ?? status)
     } catch {
       isReblogged.toggle()
-      reblogsCount += isReblogged ? -1 : 1
+      reblogsCount += isReblogged ? 1 : -1
+      log(error, action: "boost")
+      throw error
     }
   }
 
-  public func toggleBookmark(remoteStatus: String?) async {
+  public func toggleBookmark(remoteStatus: String?) async throws {
     guard client.isAuth else { return }
     isBookmarked.toggle()
     let id = remoteStatus ?? status.id
@@ -137,6 +146,14 @@ public final class StatusDataControllerProvider {
       updateFrom(status: status)
     } catch {
       isBookmarked.toggle()
+      log(error, action: "bookmark")
+      throw error
     }
+  }
+
+  private func log(_ error: any Error, action: String) {
+    Logger.env.error(
+      "\(action, privacy: .public) toggle failed for status \(self.status.id, privacy: .private(mask: .hash)): \(String(describing: type(of: error)), privacy: .public) \(String(describing: error))"
+    )
   }
 }
