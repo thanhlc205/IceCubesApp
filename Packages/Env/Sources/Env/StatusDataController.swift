@@ -15,8 +15,10 @@ public protocol StatusDataControlling {
   var reblogsCount: Int { get set }
   var repliesCount: Int { get set }
 
-  /// Each toggle shows the change at once. If the request fails, it puts the post back as it
-  /// was, logs the error and rethrows it, so the view can tell the user.
+  /// Each toggle shows the change at once. If the request fails, it undoes its own change,
+  /// logs the error and rethrows it, so the view can tell the user. It flips the state back
+  /// rather than restoring a snapshot, so a second tap or a refresh while the request is in
+  /// flight can leave a different state.
   func toggleBookmark(remoteStatus: String?) async throws
   func toggleReblog(remoteStatus: String?) async throws
   func toggleFavorite(remoteStatus: String?) async throws
@@ -151,7 +153,7 @@ public final class StatusDataControllerProvider {
 
   private func log(_ error: any Error, action: String) {
     Logger.env.error(
-      "\(action, privacy: .public) toggle failed for status \(self.status.id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+      "\(action, privacy: .public) toggle failed for status \(self.status.id, privacy: .private(mask: .hash)): \(String(describing: type(of: error)), privacy: .public) \(String(describing: error))"
     )
   }
 }

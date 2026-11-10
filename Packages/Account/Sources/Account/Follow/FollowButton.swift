@@ -73,7 +73,7 @@ import SwiftUI
       }
     } catch {
       Logger.account.error(
-        "\(isUnfollowing ? "Unfollow" : "Follow", privacy: .public) failed for account \(self.accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
+        "\(isUnfollowing ? "Unfollow" : "Follow", privacy: .public) failed for account \(self.accountId, privacy: .private(mask: .hash)): \(String(describing: type(of: error)), privacy: .public) \(String(describing: error))"
       )
       throw error
     }

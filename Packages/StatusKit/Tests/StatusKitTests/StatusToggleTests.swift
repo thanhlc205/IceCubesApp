@@ -4,6 +4,8 @@ import Foundation
 import Testing
 
 /// The toast a status row shows when a favourite, boost or bookmark doesn't go through.
+/// Package tests have no app bundle, so `String(localized:)` returns the key: these check which
+/// string each toggle picks, and the catalog supplies the words.
 @MainActor
 struct StatusToggleTests {
   let toastCenter = ToastCenter()

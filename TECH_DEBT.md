@@ -100,7 +100,13 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
   - **Toast text:** the toast's message is the server's explanation or the connection problem. Other errors get no message.
   - **Strings:** the 9 new ones are translated into every language.
   - **Counts:** `try? await` went from 66 to 64, and files using `Logger` from 3 to 6.
-- **Still silent:** the account menu's unblock, unmute, mute, notify and show-boosts actions (`AccountDetailContextMenu`, 7 empty catches). The other 44 empty catches aren't sorted yet into user actions and background work.
+- **Toast slot:** `ToastCenter` shows one toast at a time. A failure doesn't replace a progress toast, such as a post being sent, so the post's own result still appears. The failure is only logged then.
+- **Still silent:**
+  - The account menu's unblock, unmute, mute, notify and show-boosts actions (`AccountDetailContextMenu`, 7 empty catches).
+  - Favourite, boost or bookmark on a post from another server, when it can't be fetched from the user's server first (`StatusRowActionsView.handleAction`).
+  - Favourite and bookmark in direct messages (`ConversationMessageView`, 2 empty catches; `ConversationsListView`, catches that hold only a comment).
+  - A failed follow inside a sheet (the list editor, About, instance info): the button shakes, but the toast draws behind the sheet.
+  - The other 44 empty catches aren't sorted yet into user actions and background work.
 
 ### 6. Missing tests
 - **Evidence:** AppAccount, Conversations, DesignSystem, Explore, Lists, MediaUI and Notifications have no tests, and the app target has no test target. The 120 existing tests are in Account, Env, Models, NetworkClient, StatusKit and Timeline.

@@ -338,7 +338,7 @@ struct AddAccountView: View {
       return
     }
     Logger.app.error(
-      "Sign-in to \(sanitizedName, privacy: .public) failed: \(error.localizedDescription, privacy: .public)"
+      "Sign-in to \(sanitizedName, privacy: .private(mask: .hash)) failed: \(String(describing: type(of: error)), privacy: .public) \(String(describing: error))"
     )
     signInError = "account.add.error.sign-in-failed"
   }
