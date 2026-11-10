@@ -14,6 +14,7 @@ struct StatusRowContextMenu: View {
   @Environment(CurrentAccount.self) private var account
   @Environment(CurrentInstance.self) private var currentInstance
   @Environment(StatusDataController.self) private var statusDataController
+  @Environment(ToastCenter.self) private var toastCenter
   @Environment(QuickLook.self) private var quickLook
   @Environment(Theme.self) private var theme
 
@@ -66,7 +67,7 @@ struct StatusRowContextMenu: View {
           Task {
             HapticManager.shared.fireHaptic(.notification(.success))
             SoundEffectManager.shared.playSound(.boost)
-            await statusDataController.toggleReblog(remoteStatus: nil)
+            await statusDataController.toggleReblog(remoteStatus: nil, toastCenter: toastCenter)
           }
         } label: {
           boostLabel
@@ -78,7 +79,7 @@ struct StatusRowContextMenu: View {
           Task {
             HapticManager.shared.fireHaptic(.notification(.success))
             SoundEffectManager.shared.playSound(.favorite)
-            await statusDataController.toggleFavorite(remoteStatus: nil)
+            await statusDataController.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
           }
         } label: {
           Label(
@@ -91,7 +92,7 @@ struct StatusRowContextMenu: View {
           Task {
             SoundEffectManager.shared.playSound(.bookmark)
             HapticManager.shared.fireHaptic(.notification(.success))
-            await statusDataController.toggleBookmark(remoteStatus: nil)
+            await statusDataController.toggleBookmark(remoteStatus: nil, toastCenter: toastCenter)
           }
         } label: {
           Label(

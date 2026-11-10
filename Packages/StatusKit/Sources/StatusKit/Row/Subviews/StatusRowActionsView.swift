@@ -9,6 +9,7 @@ struct StatusRowActionsView: View {
   @Environment(Theme.self) private var theme
   @Environment(CurrentAccount.self) private var currentAccount
   @Environment(StatusDataController.self) private var statusDataController
+  @Environment(ToastCenter.self) private var toastCenter
   @Environment(UserPreferences.self) private var userPreferences
   @Environment(MastodonClient.self) private var client
   @Environment(SceneDelegate.self) private var sceneDelegate
@@ -374,13 +375,16 @@ struct StatusRowActionsView: View {
         #endif
       case .favorite:
         SoundEffectManager.shared.playSound(.favorite)
-        await statusDataController.toggleFavorite(remoteStatus: viewModel.localStatusId)
+        await statusDataController.toggleFavorite(
+          remoteStatus: viewModel.localStatusId, toastCenter: toastCenter)
       case .bookmark:
         SoundEffectManager.shared.playSound(.bookmark)
-        await statusDataController.toggleBookmark(remoteStatus: viewModel.localStatusId)
+        await statusDataController.toggleBookmark(
+          remoteStatus: viewModel.localStatusId, toastCenter: toastCenter)
       case .boost:
         SoundEffectManager.shared.playSound(.boost)
-        await statusDataController.toggleReblog(remoteStatus: viewModel.localStatusId)
+        await statusDataController.toggleReblog(
+          remoteStatus: viewModel.localStatusId, toastCenter: toastCenter)
       case .quote:
         SoundEffectManager.shared.playSound(.boost)
         #if targetEnvironment(macCatalyst) || os(visionOS)

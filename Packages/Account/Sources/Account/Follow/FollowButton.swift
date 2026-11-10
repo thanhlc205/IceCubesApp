@@ -1,4 +1,5 @@
 import ButtonKit
+import Env
 import Foundation
 import Models
 import NetworkClient
@@ -55,6 +56,29 @@ import SwiftUI
     }
   }
 
+  /// Follows, or unfollows when already following or requested. If that doesn't go through, it
+  /// tells the user through `toastCenter` and rethrows, so the button shows the failure too.
+  func toggleFollow(toastCenter: ToastCenter) async throws {
+    let isUnfollowing = relationship.following || relationship.requested
+    do {
+      if isUnfollowing {
+        try await unfollow()
+      } else {
+        try await follow()
+      }
+    } catch {
+      Logger.account.error(
+        "\(isUnfollowing ? "Unfollow" : "Follow", privacy: .public) failed for account \(self.accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
+      )
+      toastCenter.showFailure(
+        title: isUnfollowing
+          ? String(localized: "account.follow.unfollow-failed")
+          : String(localized: "account.follow.follow-failed"),
+        error: error)
+      throw error
+    }
+  }
+
   func refreshRelationship() async throws {
     let relationships: [Relationship] = try await client.get(
       endpoint: Accounts.relationships(ids: [accountId]))
@@ -93,6 +117,7 @@ import SwiftUI
 
 public struct FollowButton: View {
   @Environment(MastodonClient.self) private var client
+  @Environment(ToastCenter.self) private var toastCenter
   @State private var viewModel: FollowButtonViewModel
 
   public init(viewModel: FollowButtonViewModel) {
@@ -104,11 +129,7 @@ public struct FollowButton: View {
       GlassEffectContainer {
         VStack(alignment: .trailing) {
           AsyncButton {
-            if viewModel.relationship.following || viewModel.relationship.requested {
-              try await viewModel.unfollow()
-            } else {
-              try await viewModel.follow()
-            }
+            try await viewModel.toggleFollow(toastCenter: toastCenter)
           } label: {
             if viewModel.relationship.requested == true {
               Text("account.follow.requested")
@@ -162,11 +183,7 @@ public struct FollowButton: View {
     } else {
       VStack(alignment: .trailing) {
         AsyncButton {
-          if viewModel.relationship.following || viewModel.relationship.requested {
-            try await viewModel.unfollow()
-          } else {
-            try await viewModel.follow()
-          }
+          try await viewModel.toggleFollow(toastCenter: toastCenter)
         } label: {
           if viewModel.relationship.requested == true {
             Text("account.follow.requested")

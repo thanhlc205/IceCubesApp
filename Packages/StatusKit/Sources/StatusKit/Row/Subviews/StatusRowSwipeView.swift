@@ -10,6 +10,7 @@ struct StatusRowSwipeView: View {
   @Environment(UserPreferences.self) private var preferences
   @Environment(CurrentAccount.self) private var currentAccount
   @Environment(StatusDataController.self) private var statusDataController
+  @Environment(ToastCenter.self) private var toastCenter
 
   enum Mode {
     case leading, trailing
@@ -84,11 +85,11 @@ struct StatusRowSwipeView: View {
           || finalStatus.quoteApproval?.currentUser == .denied)
     case .favorite:
       makeSwipeButtonForTask(action: action) {
-        await statusDataController.toggleFavorite(remoteStatus: nil)
+        await statusDataController.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
       }
     case .boost:
       makeSwipeButtonForTask(action: action, privateBoost: privateBoost()) {
-        await statusDataController.toggleReblog(remoteStatus: nil)
+        await statusDataController.toggleReblog(remoteStatus: nil, toastCenter: toastCenter)
       }
       .disabled(
         viewModel.status.visibility == .direct
@@ -97,7 +98,7 @@ struct StatusRowSwipeView: View {
       )
     case .bookmark:
       makeSwipeButtonForTask(action: action) {
-        await statusDataController.toggleBookmark(remoteStatus: nil)
+        await statusDataController.toggleBookmark(remoteStatus: nil, toastCenter: toastCenter)
       }
     case .none:
       EmptyView()

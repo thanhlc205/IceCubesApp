@@ -24,7 +24,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 | 2 | No CI job builds or tests pull requests | Infra | 4 | 5 | 3 | **27** | ~1 day | PRs merge after an AI review that can't compile them; none of the 120 tests run | Done (Phase 1) |
 | 3 | `CLAUDE.md` is stale, and project conventions live only in one person's local Claude memory | Docs | 3 | 2 | 1 | **25** | ~1 h | Claude sessions and the PR reviewer start with wrong build commands and don't know the localization rules | Done (Phase 0) |
 | 4 | Upstream's service keys and IDs in the source | Infra | 2 | 4 | 2 | **24** | ~2 h | Each launch sends telemetry to an account this fork doesn't control; a shipped build's purchases would go there too | Done (Phase 0) |
-| 5 | Errors are swallowed instead of logged or shown | Code | 3 | 4 | 3 | **21** | ~1 day for a first pass | Failures look like nothing happened, to users and to developers | Open |
+| 5 | Errors are swallowed instead of logged or shown | Code | 3 | 4 | 3 | **21** | ~1 day for a first pass | Failures look like nothing happened, to users and to developers | First pass done (Phase 1) |
 | 6 | 7 of 13 packages have no tests, and the app has no test target | Test | 3 | 4 | 3 | **21** | 1–2 days for the first two suites | Notifications and account switching change with no safety net | Three suites done: notifications, accounts, `AppRegistry` (Phase 1) |
 | 7 | EmojiText follows a branch on a fork | Dependency | 1 | 3 | 1 | **20** | 15 min | The next dependency update moves it silently; if the branch is deleted, the build breaks | Done (Phase 0) |
 | 8 | Two hand-kept lists of injected services, which already differ | Architecture | 2 | 3 | 2 | **20** | ~½ day | A service added to only one list crashes any sheet or window that reads it | Open |
@@ -90,6 +90,17 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 ### 5. Errors are swallowed
 - **Evidence:** 51 empty `catch {}` blocks and 66 `try? await`. Only 3 files use `os.Logger`.
 - **Fix:** add a `Logger` per package. Show failed user actions (post, follow, boost, login) through the existing `ToastCenter`. After that, add no new empty catches (see the baseline below).
+- **First pass (2026-11-10):**
+  - **Loggers:** `Logger.env`, `Logger.account` and `Logger.app`, subsystem `com.icecubesapp`. Other packages get theirs when they first log.
+  - **Boost, favourite and bookmark:** a failed request now puts the post back, logs the error, and shows a red toast, such as "Couldn't boost the post". The views pass their `ToastCenter` to `StatusDataController`.
+  - **Count bug fixed:** the old rollback moved the count the wrong way. A failed favourite left the count 2 above where it started, and a failed unfavourite left it 2 below. Tests in `EnvTests` caught both before the fix.
+  - **Follow and unfollow:** a failure shows a toast, and the button still shakes.
+  - **Sign-in:** a failure shows an inline message on the add-account screen. A toast there would be hidden behind the sheet. Closing the sign-in page shows nothing.
+  - **Posting:** it already showed a failure toast and saved a draft, so it's unchanged.
+  - **Toast text:** the toast's message is the server's explanation or the connection problem. Other errors get no message.
+  - **Strings:** the 9 new ones are translated into every language.
+  - **Counts:** `try? await` went from 66 to 64, and files using `Logger` from 3 to 6.
+- **Still silent:** the account menu's unblock, unmute, mute, notify and show-boosts actions (`AccountDetailContextMenu`, 7 empty catches). The other 44 empty catches aren't sorted yet into user actions and background work.
 
 ### 6. Missing tests
 - **Evidence:** AppAccount, Conversations, DesignSystem, Explore, Lists, MediaUI and Notifications have no tests, and the app target has no test target. The 120 existing tests are in Account, Env, Models, NetworkClient, StatusKit and Timeline.
