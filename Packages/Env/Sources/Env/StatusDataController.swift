@@ -16,10 +16,10 @@ public protocol StatusDataControlling {
   var repliesCount: Int { get set }
 
   /// Each toggle shows the change at once. If the request fails, it puts the post back as it
-  /// was and tells the user through `toastCenter`.
-  func toggleBookmark(remoteStatus: String?, toastCenter: ToastCenter) async
-  func toggleReblog(remoteStatus: String?, toastCenter: ToastCenter) async
-  func toggleFavorite(remoteStatus: String?, toastCenter: ToastCenter) async
+  /// was, logs the error and rethrows it, so the view can tell the user.
+  func toggleBookmark(remoteStatus: String?) async throws
+  func toggleReblog(remoteStatus: String?) async throws
+  func toggleFavorite(remoteStatus: String?) async throws
 }
 
 @MainActor
@@ -96,7 +96,7 @@ public final class StatusDataControllerProvider {
     content = status.content
   }
 
-  public func toggleFavorite(remoteStatus: String?, toastCenter: ToastCenter) async {
+  public func toggleFavorite(remoteStatus: String?) async throws {
     guard client.isAuth else { return }
     isFavorited.toggle()
     let id = remoteStatus ?? status.id
@@ -110,15 +110,12 @@ public final class StatusDataControllerProvider {
     } catch {
       isFavorited.toggle()
       favoritesCount += isFavorited ? 1 : -1
-      report(
-        error, action: "favourite", toastCenter: toastCenter,
-        title: isFavorited
-          ? String(localized: "status.action.unfavorite-failed")
-          : String(localized: "status.action.favorite-failed"))
+      log(error, action: "favourite")
+      throw error
     }
   }
 
-  public func toggleReblog(remoteStatus: String?, toastCenter: ToastCenter) async {
+  public func toggleReblog(remoteStatus: String?) async throws {
     guard client.isAuth else { return }
     isReblogged.toggle()
     let id = remoteStatus ?? status.id
@@ -132,15 +129,12 @@ public final class StatusDataControllerProvider {
     } catch {
       isReblogged.toggle()
       reblogsCount += isReblogged ? 1 : -1
-      report(
-        error, action: "boost", toastCenter: toastCenter,
-        title: isReblogged
-          ? String(localized: "status.action.unboost-failed")
-          : String(localized: "status.action.boost-failed"))
+      log(error, action: "boost")
+      throw error
     }
   }
 
-  public func toggleBookmark(remoteStatus: String?, toastCenter: ToastCenter) async {
+  public func toggleBookmark(remoteStatus: String?) async throws {
     guard client.isAuth else { return }
     isBookmarked.toggle()
     let id = remoteStatus ?? status.id
@@ -150,20 +144,14 @@ public final class StatusDataControllerProvider {
       updateFrom(status: status)
     } catch {
       isBookmarked.toggle()
-      report(
-        error, action: "bookmark", toastCenter: toastCenter,
-        title: isBookmarked
-          ? String(localized: "status.action.unbookmark-failed")
-          : String(localized: "status.action.bookmark-failed"))
+      log(error, action: "bookmark")
+      throw error
     }
   }
 
-  /// `title` names what didn't happen. By the time this runs, the toggle is back where it
-  /// started, so a post that is still favourited means the unfavourite failed.
-  private func report(_ error: any Error, action: String, toastCenter: ToastCenter, title: String) {
+  private func log(_ error: any Error, action: String) {
     Logger.env.error(
       "\(action, privacy: .public) toggle failed for status \(self.status.id, privacy: .public): \(error.localizedDescription, privacy: .public)"
     )
-    toastCenter.showFailure(title: title, error: error)
   }
 }

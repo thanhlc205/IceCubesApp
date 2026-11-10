@@ -56,10 +56,15 @@ import SwiftUI
     }
   }
 
-  /// Follows, or unfollows when already following or requested. If that doesn't go through, it
-  /// tells the user through `toastCenter` and rethrows, so the button shows the failure too.
-  func toggleFollow(toastCenter: ToastCenter) async throws {
-    let isUnfollowing = relationship.following || relationship.requested
+  /// True when the button unfollows: the account is followed, or a follow request is pending.
+  var isUnfollowing: Bool {
+    relationship.following || relationship.requested
+  }
+
+  /// Follows, or unfollows when `isUnfollowing`. If that doesn't go through, it logs the error
+  /// and rethrows it, so the button can tell the user.
+  func toggleFollow() async throws {
+    let isUnfollowing = isUnfollowing
     do {
       if isUnfollowing {
         try await unfollow()
@@ -70,11 +75,6 @@ import SwiftUI
       Logger.account.error(
         "\(isUnfollowing ? "Unfollow" : "Follow", privacy: .public) failed for account \(self.accountId, privacy: .public): \(error.localizedDescription, privacy: .public)"
       )
-      toastCenter.showFailure(
-        title: isUnfollowing
-          ? String(localized: "account.follow.unfollow-failed")
-          : String(localized: "account.follow.follow-failed"),
-        error: error)
       throw error
     }
   }
@@ -129,7 +129,7 @@ public struct FollowButton: View {
       GlassEffectContainer {
         VStack(alignment: .trailing) {
           AsyncButton {
-            try await viewModel.toggleFollow(toastCenter: toastCenter)
+            try await toggleFollow()
           } label: {
             if viewModel.relationship.requested == true {
               Text("account.follow.requested")
@@ -183,7 +183,7 @@ public struct FollowButton: View {
     } else {
       VStack(alignment: .trailing) {
         AsyncButton {
-          try await viewModel.toggleFollow(toastCenter: toastCenter)
+          try await toggleFollow()
         } label: {
           if viewModel.relationship.requested == true {
             Text("account.follow.requested")
@@ -228,6 +228,22 @@ public struct FollowButton: View {
         }
       }
       .buttonStyle(.bordered)
+    }
+  }
+
+  /// Tells the user when following or unfollowing doesn't go through, and rethrows so the
+  /// button shakes too.
+  private func toggleFollow() async throws {
+    let isUnfollowing = viewModel.isUnfollowing
+    do {
+      try await viewModel.toggleFollow()
+    } catch {
+      toastCenter.showFailure(
+        title: isUnfollowing
+          ? String(localized: "account.follow.unfollow-failed")
+          : String(localized: "account.follow.follow-failed"),
+        error: error)
+      throw error
     }
   }
 }

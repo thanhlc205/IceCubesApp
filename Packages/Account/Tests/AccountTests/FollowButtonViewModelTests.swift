@@ -1,5 +1,4 @@
 @testable import Account
-@testable import Env
 import Foundation
 import Models
 import NetworkClient
@@ -9,38 +8,35 @@ import Testing
 /// HTTPS, so every request fails at once with a connection error, as it does offline.
 @MainActor
 struct FollowButtonViewModelTests {
-  let toastCenter = ToastCenter()
-
-  @Test func failedFollowTellsTheUserAndThrows() async throws {
+  @Test func failedFollowThrowsAndKeepsTheRelationship() async throws {
     let viewModel = try makeViewModel(relationship: #"{"id": "9", "following": false}"#)
 
     await #expect(throws: URLError.self) {
-      try await viewModel.toggleFollow(toastCenter: toastCenter)
+      try await viewModel.toggleFollow()
     }
 
-    #expect(toastCenter.toast?.title == "account.follow.follow-failed")
     #expect(viewModel.relationship.following == false)
   }
 
-  @Test func failedUnfollowTellsTheUserAndThrows() async throws {
+  @Test func failedUnfollowThrowsAndKeepsTheRelationship() async throws {
     let viewModel = try makeViewModel(relationship: #"{"id": "9", "following": true}"#)
 
     await #expect(throws: URLError.self) {
-      try await viewModel.toggleFollow(toastCenter: toastCenter)
+      try await viewModel.toggleFollow()
     }
 
-    #expect(toastCenter.toast?.title == "account.follow.unfollow-failed")
     #expect(viewModel.relationship.following == true)
   }
 
-  @Test func failedCancelOfAFollowRequestSaysUnfollow() async throws {
-    let viewModel = try makeViewModel(relationship: #"{"id": "9", "requested": true}"#)
+  @Test(arguments: [
+    (#"{"id": "9"}"#, false),
+    (#"{"id": "9", "following": true}"#, true),
+    (#"{"id": "9", "requested": true}"#, true),
+  ])
+  func unfollowsWhenFollowingOrRequested(_ relationship: String, isUnfollowing: Bool) throws {
+    let viewModel = try makeViewModel(relationship: relationship)
 
-    await #expect(throws: URLError.self) {
-      try await viewModel.toggleFollow(toastCenter: toastCenter)
-    }
-
-    #expect(toastCenter.toast?.title == "account.follow.unfollow-failed")
+    #expect(viewModel.isUnfollowing == isUnfollowing)
   }
 
   private func makeViewModel(relationship json: String) throws -> FollowButtonViewModel {

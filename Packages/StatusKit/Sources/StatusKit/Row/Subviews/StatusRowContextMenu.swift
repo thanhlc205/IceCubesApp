@@ -67,7 +67,9 @@ struct StatusRowContextMenu: View {
           Task {
             HapticManager.shared.fireHaptic(.notification(.success))
             SoundEffectManager.shared.playSound(.boost)
-            await statusDataController.toggleReblog(remoteStatus: nil, toastCenter: toastCenter)
+            await toastCenter.run(.boost, undoing: statusDataController.isReblogged) {
+              try await statusDataController.toggleReblog(remoteStatus: nil)
+            }
           }
         } label: {
           boostLabel
@@ -79,7 +81,9 @@ struct StatusRowContextMenu: View {
           Task {
             HapticManager.shared.fireHaptic(.notification(.success))
             SoundEffectManager.shared.playSound(.favorite)
-            await statusDataController.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
+            await toastCenter.run(.favorite, undoing: statusDataController.isFavorited) {
+              try await statusDataController.toggleFavorite(remoteStatus: nil)
+            }
           }
         } label: {
           Label(
@@ -92,7 +96,9 @@ struct StatusRowContextMenu: View {
           Task {
             SoundEffectManager.shared.playSound(.bookmark)
             HapticManager.shared.fireHaptic(.notification(.success))
-            await statusDataController.toggleBookmark(remoteStatus: nil, toastCenter: toastCenter)
+            await toastCenter.run(.bookmark, undoing: statusDataController.isBookmarked) {
+              try await statusDataController.toggleBookmark(remoteStatus: nil)
+            }
           }
         } label: {
           Label(

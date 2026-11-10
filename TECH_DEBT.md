@@ -92,9 +92,9 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 - **Fix:** add a `Logger` per package. Show failed user actions (post, follow, boost, login) through the existing `ToastCenter`. After that, add no new empty catches (see the baseline below).
 - **First pass (2026-11-10):**
   - **Loggers:** `Logger.env`, `Logger.account` and `Logger.app`, subsystem `com.icecubesapp`. Other packages get theirs when they first log.
-  - **Boost, favourite and bookmark:** a failed request now puts the post back, logs the error, and shows a red toast, such as "Couldn't boost the post". The views pass their `ToastCenter` to `StatusDataController`.
+  - **Boost, favourite and bookmark:** when a request fails, `StatusDataController` puts the post back, logs the error and rethrows it. The status row views catch the error and show a red toast, such as "Couldn't boost the post".
   - **Count bug fixed:** the old rollback moved the count the wrong way. A failed favourite left the count 2 above where it started, and a failed unfavourite left it 2 below. Tests in `EnvTests` caught both before the fix.
-  - **Follow and unfollow:** a failure shows a toast, and the button still shakes.
+  - **Follow and unfollow:** `FollowButtonViewModel` logs the error and rethrows it. `FollowButton` shows a toast, and the button still shakes.
   - **Sign-in:** a failure shows an inline message on the add-account screen. A toast there would be hidden behind the sheet. Closing the sign-in page shows nothing.
   - **Posting:** it already showed a failure toast and saved a draft, so it's unchanged.
   - **Toast text:** the toast's message is the server's explanation or the connection problem. Other errors get no message.

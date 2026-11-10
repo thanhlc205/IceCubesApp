@@ -82,7 +82,7 @@ The codebase contains legacy MVVM, but **new features should NOT use ViewModels*
 - **Modern approach:** views as pure state expressions using SwiftUI primitives
 - **Environment:** `@Observable` services injected with `.environment(_:)`. In views, prefer `@Environment` over calling `.shared`.
 - **Swift Concurrency:** async/await throughout; the packages build in the Swift 6 language mode
-- **Errors:** don't add empty `catch {}` blocks. Log with the package's `Logger` (`Logger.env`, `Logger.account`, `Logger.app`; a package without one gets a `Logger+<Package>.swift` with subsystem `com.icecubesapp`). When something the user did fails, tell them with `toastCenter.showFailure(title:error:)`, using the `ToastCenter` from the environment. Inside a sheet, show the error in the sheet instead, because toasts draw in the main window behind it.
+- **Errors:** don't add empty `catch {}` blocks. Log with the package's `Logger` (`Logger.env`, `Logger.account`, `Logger.app`; a package without one gets a `Logger+<Package>.swift` with subsystem `com.icecubesapp`). Services, data controllers and view models log and rethrow, and never show UI. The view catches the error and, when something the user did failed, calls `toastCenter.showFailure(title:error:)` on the `ToastCenter` from its environment. Inside a sheet, show the error in the sheet instead, because toasts draw in the main window behind it.
 
 ### App extensions and other targets
 - **IceCubesNotifications**: decrypts Web Push payloads (relayed through a proxy server for privacy) and formats notifications

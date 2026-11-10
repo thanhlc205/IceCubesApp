@@ -9,78 +9,73 @@ import Testing
 /// does offline.
 @MainActor
 struct StatusDataControllerFailureTests {
-  let toastCenter = ToastCenter()
   let offlineClient = MastodonClient(
     server: "127.0.0.1",
     oauthToken: OauthToken(accessToken: "token", tokenType: "Bearer", scope: "read write", createdAt: 0)
   )
 
-  @Test func failedFavouriteLeavesThePostAsItWas() async throws {
+  @Test func failedFavouriteThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(favourited: false, favourites: 5)
 
-    await controller.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
+    await #expect(throws: URLError.self) {
+      try await controller.toggleFavorite(remoteStatus: nil)
+    }
 
     #expect(controller.isFavorited == false)
     #expect(controller.favoritesCount == 5)
-    #expect(toastCenter.toast?.title == "status.action.favorite-failed")
   }
 
-  @Test func failedUnfavouriteLeavesThePostAsItWas() async throws {
+  @Test func failedUnfavouriteThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(favourited: true, favourites: 5)
 
-    await controller.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
+    await #expect(throws: URLError.self) {
+      try await controller.toggleFavorite(remoteStatus: nil)
+    }
 
     #expect(controller.isFavorited == true)
     #expect(controller.favoritesCount == 5)
-    #expect(toastCenter.toast?.title == "status.action.unfavorite-failed")
   }
 
-  @Test func failedBoostLeavesThePostAsItWas() async throws {
+  @Test func failedBoostThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(reblogged: false, reblogs: 3)
 
-    await controller.toggleReblog(remoteStatus: nil, toastCenter: toastCenter)
+    await #expect(throws: URLError.self) {
+      try await controller.toggleReblog(remoteStatus: nil)
+    }
 
     #expect(controller.isReblogged == false)
     #expect(controller.reblogsCount == 3)
-    #expect(toastCenter.toast?.title == "status.action.boost-failed")
   }
 
-  @Test func failedUnboostLeavesThePostAsItWas() async throws {
+  @Test func failedUnboostThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(reblogged: true, reblogs: 3)
 
-    await controller.toggleReblog(remoteStatus: nil, toastCenter: toastCenter)
+    await #expect(throws: URLError.self) {
+      try await controller.toggleReblog(remoteStatus: nil)
+    }
 
     #expect(controller.isReblogged == true)
     #expect(controller.reblogsCount == 3)
-    #expect(toastCenter.toast?.title == "status.action.unboost-failed")
   }
 
-  @Test func failedBookmarkLeavesThePostAsItWas() async throws {
+  @Test func failedBookmarkThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(bookmarked: false)
 
-    await controller.toggleBookmark(remoteStatus: nil, toastCenter: toastCenter)
+    await #expect(throws: URLError.self) {
+      try await controller.toggleBookmark(remoteStatus: nil)
+    }
 
     #expect(controller.isBookmarked == false)
-    #expect(toastCenter.toast?.title == "status.action.bookmark-failed")
   }
 
-  @Test func failedUnbookmarkLeavesThePostAsItWas() async throws {
+  @Test func failedUnbookmarkThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(bookmarked: true)
 
-    await controller.toggleBookmark(remoteStatus: nil, toastCenter: toastCenter)
+    await #expect(throws: URLError.self) {
+      try await controller.toggleBookmark(remoteStatus: nil)
+    }
 
     #expect(controller.isBookmarked == true)
-    #expect(toastCenter.toast?.title == "status.action.unbookmark-failed")
-  }
-
-  @Test func failureToastExplainsTheConnectionProblem() async throws {
-    let controller = try controller(favourited: false, favourites: 0)
-
-    await controller.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
-
-    let toast = try #require(toastCenter.toast)
-    #expect(toast.message?.isEmpty == false)
-    #expect(toast.tint == .red)
   }
 
   @Test func signedOutDoesNothing() async throws {
@@ -89,11 +84,10 @@ struct StatusDataControllerFailureTests {
       status: status(favourited: false, favourites: 5), client: signedOut
     )
 
-    await controller.toggleFavorite(remoteStatus: nil, toastCenter: toastCenter)
+    try await controller.toggleFavorite(remoteStatus: nil)
 
     #expect(controller.isFavorited == false)
     #expect(controller.favoritesCount == 5)
-    #expect(toastCenter.toast == nil)
   }
 
   private func controller(
