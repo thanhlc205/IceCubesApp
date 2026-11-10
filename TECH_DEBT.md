@@ -106,6 +106,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
   - Favourite, boost or bookmark on a post from another server, when it can't be fetched from the user's server first (`StatusRowActionsView.handleAction`).
   - Favourite and bookmark in direct messages (`ConversationMessageView`, 2 empty catches; `ConversationsListView`, catches that hold only a comment).
   - A failed follow inside a sheet (the list editor, About, instance info): the button shakes, but the toast draws behind the sheet.
+  - A follow or unfollow the server refuses. `MastodonClient` decodes a response before it checks the status code, and `Relationship` gives every field a default, so the error body `{"error": …}` decodes as an empty relationship. Nothing is thrown, and the button shows "Follow" again with no toast. Only connection errors reach the toast.
   - The other 44 empty catches aren't sorted yet into user actions and background work.
 
 ### 6. Missing tests
