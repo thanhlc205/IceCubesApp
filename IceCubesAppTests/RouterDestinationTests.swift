@@ -2,6 +2,7 @@ import Env
 import Foundation
 @testable import Ice_Cubes
 import Models
+import NetworkStubs
 import Testing
 
 extension AppTests {
@@ -10,7 +11,7 @@ extension AppTests {
   @MainActor
   struct RouterDestinationTests {
     init() {
-      StubServer.install()
+      StubServer.install(everyHost: true)
       StubServer.reset()
     }
 

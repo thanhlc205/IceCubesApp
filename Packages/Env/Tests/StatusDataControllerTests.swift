@@ -2,6 +2,7 @@
 import Foundation
 import Models
 import NetworkClient
+import NetworkStubs
 import Testing
 
 /// Favourite, boost and bookmark when the server takes the change. The client points at
@@ -29,7 +30,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleFavorite(remoteStatus: nil)
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/1/favourite"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/1/favourite"])
     #expect(controller.isFavorited == true)
     #expect(controller.favoritesCount == 9)
   }
@@ -42,7 +43,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleFavorite(remoteStatus: nil)
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/1/unfavourite"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/1/unfavourite"])
     #expect(controller.isFavorited == false)
     #expect(controller.favoritesCount == 2)
   }
@@ -58,7 +59,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleReblog(remoteStatus: nil)
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/1/reblog"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/1/reblog"])
     #expect(controller.isReblogged == true)
     #expect(controller.reblogsCount == 7)
   }
@@ -71,7 +72,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleReblog(remoteStatus: nil)
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/1/unreblog"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/1/unreblog"])
     #expect(controller.isReblogged == false)
     #expect(controller.reblogsCount == 1)
   }
@@ -83,7 +84,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleBookmark(remoteStatus: nil)
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/1/bookmark"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/1/bookmark"])
     #expect(controller.isBookmarked == true)
   }
 
@@ -94,7 +95,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleBookmark(remoteStatus: nil)
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/1/unbookmark"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/1/unbookmark"])
     #expect(controller.isBookmarked == false)
   }
 
@@ -107,7 +108,7 @@ struct StatusDataControllerSuccessTests {
 
     try await controller.toggleFavorite(remoteStatus: "77")
 
-    #expect(StubServer.requests == ["POST /api/v1/statuses/77/favourite"])
+    #expect(StubServer.sent == ["POST /api/v1/statuses/77/favourite"])
     #expect(controller.isFavorited == true)
     #expect(controller.favoritesCount == 6)
   }

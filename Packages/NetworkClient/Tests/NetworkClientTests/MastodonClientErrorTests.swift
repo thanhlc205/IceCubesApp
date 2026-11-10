@@ -1,6 +1,7 @@
 import Foundation
 import Models
 @testable import NetworkClient
+import NetworkStubs
 import Testing
 
 /// What `MastodonClient` throws when the server answers with an error. A `Relationship` gives

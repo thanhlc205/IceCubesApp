@@ -37,7 +37,10 @@ let package = Package(
     ),
     .testTarget(
       name: "EnvTests",
-      dependencies: ["Env"]
+      dependencies: [
+        "Env",
+        .product(name: "NetworkStubs", package: "NetworkClient"),
+      ]
     ),
   ]
 )

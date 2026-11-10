@@ -40,7 +40,10 @@ let package = Package(
     ),
     .testTarget(
       name: "NotificationsTests",
-      dependencies: ["Notifications"]
+      dependencies: [
+        "Notifications",
+        .product(name: "NetworkStubs", package: "NetworkClient"),
+      ]
     ),
   ]
 )

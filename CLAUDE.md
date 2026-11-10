@@ -29,10 +29,10 @@ xcodebuild test -project IceCubesApp.xcodeproj -scheme TimelineTests -destinatio
 ```
 Skipping signing is fine for test runs. To run one Swift Testing test, pass its name with parentheses, such as `-only-testing:AppAccountTests/AppAccountsManagerTests/addingAnAccountListsItAndSwitchesToIt()`. Without them the filter matches nothing and the run passes with no tests.
 
-- **Network:** to test code that calls `MastodonClient`, answer its requests with a `URLProtocol` stub, as `Packages/Notifications/Tests/NotificationsTests/StubServer.swift` does, and mark the suite `.serialized`. When a request only needs to fail, point the client at `OfflineURLProtocol.host` instead, as the Env and Account tests do: it fails every request with a connection error and keeps no state.
+- **Network:** to test code that calls `MastodonClient`, add `.product(name: "NetworkStubs", package: "NetworkClient")` to the test target and point the client at `StubServer.host`. `StubServer` answers with queued JSON and a status code per answer, and records each request; mark the suite `.serialized`. When a request only needs to fail, point the client at `OfflineURLProtocol.host` instead: it fails every request with a connection error and keeps no state. Both live in `Packages/NetworkClient/Sources/NetworkStubs/`; don't copy them into a test target.
 - **Keychain:** package tests run without a host app, so every keychain write fails with `errSecMissingEntitlement` (-34018), signed or not. Code that saves to the keychain can't be tested at this level yet.
 
-App tests: the `IceCubesApp` scheme's test action runs `IceCubesAppTests/`, a unit-test bundle hosted in the app (`@testable import Ice_Cubes`, the app's module name). Its `RouterHarness` shows `withAppRouter()` and `withSheetDestinations` in a window the way a tab does, inside the main window's services, and its own `StubServer` answers every request.
+App tests: the `IceCubesApp` scheme's test action runs `IceCubesAppTests/`, a unit-test bundle hosted in the app (`@testable import Ice_Cubes`, the app's module name). Its `RouterHarness` shows `withAppRouter()` and `withSheetDestinations` in a window the way a tab does, inside the main window's services, and `StubServer` (from `NetworkStubs`, installed with `everyHost: true`) answers every request.
 ```bash
 xcodebuild test -project IceCubesApp.xcodeproj -scheme IceCubesApp -destination 'platform=iOS Simulator,name=iPhone Air,OS=latest' CODE_SIGNING_ALLOWED=NO
 ```

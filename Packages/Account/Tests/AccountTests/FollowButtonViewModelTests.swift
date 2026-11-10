@@ -2,6 +2,7 @@
 import Foundation
 import Models
 import NetworkClient
+import NetworkStubs
 import Testing
 
 /// Following when the server answers. The client points at `StubServer.host`, which answers with
@@ -24,7 +25,7 @@ struct FollowButtonViewModelServerTests {
 
     try await viewModel.toggleFollow()
 
-    #expect(StubServer.requests == ["POST /api/v1/accounts/9/follow"])
+    #expect(StubServer.sent == ["POST /api/v1/accounts/9/follow"])
     #expect(viewModel.relationship.following == true)
     #expect(updates.map(\.following) == [true])
   }
@@ -39,7 +40,7 @@ struct FollowButtonViewModelServerTests {
 
     try await viewModel.toggleFollow()
 
-    #expect(StubServer.requests == ["POST /api/v1/accounts/9/unfollow"])
+    #expect(StubServer.sent == ["POST /api/v1/accounts/9/unfollow"])
     #expect(viewModel.relationship.following == false)
     #expect(updates.map(\.following) == [false])
   }
@@ -55,7 +56,7 @@ struct FollowButtonViewModelServerTests {
 
     try await viewModel.toggleFollow()
 
-    #expect(StubServer.requests == ["POST /api/v1/accounts/9/unfollow"])
+    #expect(StubServer.sent == ["POST /api/v1/accounts/9/unfollow"])
     #expect(viewModel.relationship.requested == false)
     #expect(updates.map(\.requested) == [false])
   }

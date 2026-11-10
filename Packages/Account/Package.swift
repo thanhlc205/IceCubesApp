@@ -44,7 +44,10 @@ let package = Package(
     ),
     .testTarget(
       name: "AccountTests",
-      dependencies: ["Account"]
+      dependencies: [
+        "Account",
+        .product(name: "NetworkStubs", package: "NetworkClient"),
+      ]
     ),
   ]
 )
