@@ -3,19 +3,18 @@ import os
 
 /// Answers requests to `host` with canned JSON, so a real `MastodonClient` runs its real
 /// request building and decoding without reaching the network. It's a trimmed copy of the
-/// Notifications tests' stub that takes only requests to its own host, so it doesn't catch the
-/// requests `OfflineURLProtocol` fails.
+/// Notifications tests' stub that takes only requests to its own host, so other stubs, such as
+/// `OfflineURLProtocol`, can sit beside it.
 ///
-/// Responses are queued per method and path and served in order. A request with nothing queued
-/// gets a 404 with a Mastodon error body. The client decodes the body before it looks at the
-/// status, so a type whose fields are all optional, such as `Relationship`, takes that body as an
-/// empty answer: check `requests` to know what was sent. The state is global, so suites that use
-/// it must be `.serialized`.
+/// Responses are queued per method and path and served in order, each with its status code. A
+/// request with nothing queued gets a 404 with a Mastodon error body, which the client throws as
+/// a `ServerError`. `requests` lists what was sent. The state is global, so suites that use it
+/// must be `.serialized`.
 enum StubServer {
   static let host = "stub.test"
 
   private struct State {
-    var queued: [String: [String]] = [:]
+    var queued: [String: [(status: Int, json: String)]] = [:]
     var requests: [String] = []
   }
 
@@ -32,8 +31,9 @@ enum StubServer {
     state.withLock { $0 = State() }
   }
 
-  static func enqueue(_ path: String, method: String = "GET", json: String) {
-    state.withLock { $0.queued["\(method) \(path)", default: []].append(json) }
+  /// Queues an answer. `json` is sent as is, so an error page can be any text.
+  static func enqueue(_ path: String, method: String = "GET", status: Int = 200, json: String) {
+    state.withLock { $0.queued["\(method) \(path)", default: []].append((status, json)) }
   }
 
   /// Every request sent since the last `reset()`, in order, as "METHOD /path".
@@ -48,9 +48,9 @@ enum StubServer {
       guard var queue = state.queued[key], !queue.isEmpty else {
         return (404, Data(#"{"error":"Record not found"}"#.utf8))
       }
-      let json = queue.removeFirst()
+      let answer = queue.removeFirst()
       state.queued[key] = queue
-      return (200, Data(json.utf8))
+      return (answer.status, Data(answer.json.utf8))
     }
   }
 }

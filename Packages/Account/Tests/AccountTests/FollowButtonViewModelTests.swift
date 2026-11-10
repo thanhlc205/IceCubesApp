@@ -4,11 +4,11 @@ import Models
 import NetworkClient
 import Testing
 
-/// Following when the server takes the change. The client points at `StubServer.host`, which
-/// answers with the relationship as the server now has it.
+/// Following when the server answers. The client points at `StubServer.host`, which answers with
+/// the relationship as the server now has it, or refuses.
 @Suite(.serialized)
 @MainActor
-struct FollowButtonViewModelSuccessTests {
+struct FollowButtonViewModelServerTests {
   init() {
     StubServer.install()
     StubServer.reset()
@@ -58,6 +58,45 @@ struct FollowButtonViewModelSuccessTests {
     #expect(StubServer.requests == ["POST /api/v1/accounts/9/unfollow"])
     #expect(viewModel.relationship.requested == false)
     #expect(updates.map(\.requested) == [false])
+  }
+
+  /// The server's own explanation reaches the error, which the button shows in its toast.
+  @Test func refusedFollowThrowsAndKeepsTheRelationship() async throws {
+    var updates: [Relationship] = []
+    let viewModel = try makeViewModel(
+      server: StubServer.host, relationship: #"{"id": "9", "following": false}"#,
+      relationshipUpdated: { updates.append($0) })
+    let before = viewModel.relationship
+    StubServer.enqueue(
+      "/api/v1/accounts/9/follow", method: "POST", status: 403,
+      json: #"{"error": "This action is not allowed"}"#)
+
+    let error = await #expect(throws: ServerError.self) {
+      try await viewModel.toggleFollow()
+    }
+
+    #expect(error?.error == "This action is not allowed")
+    #expect(viewModel.relationship == before)
+    #expect(updates.isEmpty)
+  }
+
+  @Test func refusedUnfollowThrowsAndKeepsTheRelationship() async throws {
+    var updates: [Relationship] = []
+    let viewModel = try makeViewModel(
+      server: StubServer.host, relationship: #"{"id": "9", "following": true}"#,
+      relationshipUpdated: { updates.append($0) })
+    let before = viewModel.relationship
+    StubServer.enqueue(
+      "/api/v1/accounts/9/unfollow", method: "POST", status: 429,
+      json: #"{"error": "Too many requests"}"#)
+
+    let error = await #expect(throws: ServerError.self) {
+      try await viewModel.toggleFollow()
+    }
+
+    #expect(error?.error == "Too many requests")
+    #expect(viewModel.relationship == before)
+    #expect(updates.isEmpty)
   }
 }
 

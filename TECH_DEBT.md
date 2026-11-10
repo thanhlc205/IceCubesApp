@@ -95,6 +95,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
   - **Boost, favourite and bookmark:** when a request fails, `StatusDataController` puts the post back, logs the error and rethrows it. The status row views catch the error and show a red toast, such as "Couldn't boost the post".
   - **Count bug fixed:** the old rollback moved the count the wrong way. A failed favourite left the count 2 above where it started, and a failed unfavourite left it 2 below. Tests in `EnvTests` caught both before the fix.
   - **Follow and unfollow:** `FollowButtonViewModel` logs the error and rethrows it. `FollowButton` shows a toast, and the button still shakes.
+  - **Refused requests:** `MastodonClient` checks the status code before it decodes, so any answer outside 200–299 to a `get`, `post` or `put` that returns a value throws `ServerError` with the server's message and the code. Before, types that give every field a default (`Relationship`, `Marker`, `ServerPreferences`) decoded the error body as an empty answer: a refused follow showed no toast, and a refused block or mute in the account menu blanked the relationship. Lists (`getWithLink`) and media uploads are unchanged; their types can't decode an error body.
   - **Sign-in:** a failure shows an inline message on the add-account screen. A toast there would be hidden behind the sheet. Closing the sign-in page shows nothing.
   - **Posting:** it already showed a failure toast and saved a draft, so it's unchanged.
   - **Toast text:** the toast's message is the server's explanation or the connection problem. Other errors get no message.
@@ -106,7 +107,6 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
   - Favourite, boost or bookmark on a post from another server, when it can't be fetched from the user's server first (`StatusRowActionsView.handleAction`).
   - Favourite and bookmark in direct messages (`ConversationMessageView`, 2 empty catches; `ConversationsListView`, catches that hold only a comment).
   - A failed follow inside a sheet (the list editor, About, instance info): the button shakes, but the toast draws behind the sheet.
-  - A follow or unfollow the server refuses. `MastodonClient` decodes a response before it checks the status code, and `Relationship` gives every field a default, so the error body `{"error": …}` decodes as an empty relationship. Nothing is thrown, and the button shows "Follow" again with no toast. Only connection errors reach the toast.
   - The other 44 empty catches aren't sorted yet into user actions and background work.
 
 ### 6. Missing tests
