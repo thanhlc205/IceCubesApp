@@ -4,22 +4,27 @@ import Models
 import NetworkClient
 import Testing
 
-/// Favourite, boost and bookmark when the request fails. The client points at this machine,
-/// where nothing serves HTTPS, so every request fails at once with a connection error, as it
-/// does offline.
+/// Favourite, boost and bookmark when the request fails. The client points at
+/// `OfflineURLProtocol.host`, where every request fails with a connection error, as it does
+/// offline.
 @MainActor
 struct StatusDataControllerFailureTests {
   let offlineClient = MastodonClient(
-    server: "127.0.0.1",
+    server: OfflineURLProtocol.host,
     oauthToken: OauthToken(accessToken: "token", tokenType: "Bearer", scope: "read write", createdAt: 0)
   )
+
+  init() {
+    OfflineURLProtocol.install()
+  }
 
   @Test func failedFavouriteThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(favourited: false, favourites: 5)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await controller.toggleFavorite(remoteStatus: nil)
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(controller.isFavorited == false)
     #expect(controller.favoritesCount == 5)
@@ -28,9 +33,10 @@ struct StatusDataControllerFailureTests {
   @Test func failedUnfavouriteThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(favourited: true, favourites: 5)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await controller.toggleFavorite(remoteStatus: nil)
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(controller.isFavorited == true)
     #expect(controller.favoritesCount == 5)
@@ -39,9 +45,10 @@ struct StatusDataControllerFailureTests {
   @Test func failedBoostThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(reblogged: false, reblogs: 3)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await controller.toggleReblog(remoteStatus: nil)
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(controller.isReblogged == false)
     #expect(controller.reblogsCount == 3)
@@ -50,9 +57,10 @@ struct StatusDataControllerFailureTests {
   @Test func failedUnboostThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(reblogged: true, reblogs: 3)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await controller.toggleReblog(remoteStatus: nil)
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(controller.isReblogged == true)
     #expect(controller.reblogsCount == 3)
@@ -61,9 +69,10 @@ struct StatusDataControllerFailureTests {
   @Test func failedBookmarkThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(bookmarked: false)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await controller.toggleBookmark(remoteStatus: nil)
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(controller.isBookmarked == false)
   }
@@ -71,15 +80,16 @@ struct StatusDataControllerFailureTests {
   @Test func failedUnbookmarkThrowsAndLeavesThePostAsItWas() async throws {
     let controller = try controller(bookmarked: true)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await controller.toggleBookmark(remoteStatus: nil)
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(controller.isBookmarked == true)
   }
 
   @Test func signedOutDoesNothing() async throws {
-    let signedOut = MastodonClient(server: "127.0.0.1")
+    let signedOut = MastodonClient(server: OfflineURLProtocol.host)
     let controller = try StatusDataController(
       status: status(favourited: false, favourites: 5), client: signedOut
     )

@@ -29,7 +29,7 @@ xcodebuild test -project IceCubesApp.xcodeproj -scheme TimelineTests -destinatio
 ```
 Skipping signing is fine for test runs. To run one Swift Testing test, pass its name with parentheses, such as `-only-testing:AppAccountTests/AppAccountsManagerTests/addingAnAccountListsItAndSwitchesToIt()`. Without them the filter matches nothing and the run passes with no tests.
 
-- **Network:** to test code that calls `MastodonClient`, answer its requests with a `URLProtocol` stub, as `Packages/Notifications/Tests/NotificationsTests/StubServer.swift` does, and mark the suite `.serialized`.
+- **Network:** to test code that calls `MastodonClient`, answer its requests with a `URLProtocol` stub, as `Packages/Notifications/Tests/NotificationsTests/StubServer.swift` does, and mark the suite `.serialized`. When a request only needs to fail, point the client at `OfflineURLProtocol.host` instead, as the Env and Account tests do: it fails every request with a connection error and keeps no state. Never rely on what this machine serves, such as nothing listening on `127.0.0.1`.
 - **Keychain:** package tests run without a host app, so every keychain write fails with `errSecMissingEntitlement` (-34018), signed or not. Code that saves to the keychain can't be tested at this level yet.
 
 App tests: the `IceCubesApp` scheme's test action runs `IceCubesAppTests/`, a unit-test bundle hosted in the app (`@testable import Ice_Cubes`, the app's module name). Its `RouterHarness` shows `withAppRouter()` and `withSheetDestinations` in a window the way a tab does, inside the main window's services, and its own `StubServer` answers every request.

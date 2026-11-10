@@ -4,16 +4,21 @@ import Models
 import NetworkClient
 import Testing
 
-/// Following when the request fails. The client points at this machine, where nothing serves
-/// HTTPS, so every request fails at once with a connection error, as it does offline.
+/// Following when the request fails. The client points at `OfflineURLProtocol.host`, where every
+/// request fails with a connection error, as it does offline.
 @MainActor
 struct FollowButtonViewModelTests {
+  init() {
+    OfflineURLProtocol.install()
+  }
+
   @Test func failedFollowThrowsAndKeepsTheRelationship() async throws {
     let viewModel = try makeViewModel(relationship: #"{"id": "9", "following": false}"#)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await viewModel.toggleFollow()
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(viewModel.relationship.following == false)
   }
@@ -21,9 +26,10 @@ struct FollowButtonViewModelTests {
   @Test func failedUnfollowThrowsAndKeepsTheRelationship() async throws {
     let viewModel = try makeViewModel(relationship: #"{"id": "9", "following": true}"#)
 
-    await #expect(throws: URLError.self) {
+    let error = await #expect(throws: URLError.self) {
       try await viewModel.toggleFollow()
     }
+    #expect(error?.code == .notConnectedToInternet)
 
     #expect(viewModel.relationship.following == true)
   }
@@ -44,7 +50,7 @@ struct FollowButtonViewModelTests {
     decoder.keyDecodingStrategy = .convertFromSnakeCase
     return try FollowButtonViewModel(
       client: MastodonClient(
-        server: "127.0.0.1",
+        server: OfflineURLProtocol.host,
         oauthToken: OauthToken(
           accessToken: "token", tokenType: "Bearer", scope: "read write", createdAt: 0
         )
