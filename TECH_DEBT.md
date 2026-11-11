@@ -86,6 +86,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
   - RevenueCat isn't configured, and both Support entries are hidden;
   - WishKit isn't configured, and Feature Requests is hidden;
   - the add-account server list stays empty.
+- **Split (2026-11-11):** Debug and Release now read separate gitignored files, `Secrets-debug.xcconfig` and `Secrets-release.xcconfig`, both copied from the same template. Neither falls back to the other, so production keys never reach a Debug build.
 
 ### 5. Errors are swallowed
 - **Evidence:** 51 empty `catch {}` blocks and 66 `try? await`. Only 3 files use `os.Logger`.
