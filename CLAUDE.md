@@ -71,7 +71,7 @@ The app target (`IceCubesApp/`) is a thin shell. Features live in 13 local Swift
 - **Account**, **Notifications**, **Conversations**, **Explore**, **Lists**: feature screens. Explore and Lists also depend on Account.
 
 ### How the pieces connect
-- **Dependency injection:** `IceCubesApp` owns the shared services and injects them with `withAppDependencyGraph` in `IceCubesApp/App/Router/AppRegistry.swift`. Sheets and the extra Catalyst/visionOS windows use `withEnvironments()`, so a new service has to be added to both.
+- **Dependency injection:** `IceCubesApp` owns the shared services. `AppDependencies` in `IceCubesApp/App/Router/AppRegistry.swift` is the one list of them, and `withAppDependencies(_:)` injects it into the main window (through `withAppDependencyGraph`), the media sheet, and the extra Catalyst/visionOS windows. A new service goes in `AppDependencies` and that modifier, and `AppDependenciesTests` checks every one arrives. Sheets inherit the services of the view that presents them, so they don't inject anything.
 - **Routing:** feature packages push `RouterDestination` and `SheetDestination` values onto `RouterPath` without importing each other. Only `AppRegistry.swift` maps destinations to views, so a new screen needs a case in `Packages/Env/Sources/Env/Router.swift` and a mapping in `AppRegistry.swift`.
 - **Account switching:** setting `AppAccountsManager.currentAccount` creates a new `MastodonClient`, and a `.task(id:)` in `withAppDependencyGraph` points the other services at it.
 - **Live updates:** `StreamWatcher` keeps a streaming connection open and publishes `latestEvent`, which the timeline, notification and detail views observe.

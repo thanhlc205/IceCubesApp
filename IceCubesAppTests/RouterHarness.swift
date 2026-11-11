@@ -104,20 +104,7 @@ private struct HarnessRoot: View {
     // Closer to the screens than the graph's own client, so it wins.
     .environment(client)
     // The same instances `IceCubesApp` passes for the main window.
-    .withAppDependencyGraph(
-      appAccountsManager: .shared,
-      currentAccount: .shared,
-      currentInstance: .shared,
-      userPreferences: .shared,
-      theme: .shared,
-      watcher: .shared,
-      pushNotificationsService: .shared,
-      appIntentService: .shared,
-      quickLook: .shared,
-      toastCenter: .shared,
-      namespace: namespace,
-      isSupporter: false
-    )
+    .withAppDependencyGraph(.sharedInstances(), namespace: namespace)
     .modelContainer(
       for: [
         Draft.self, LocalTimeline.self, TagGroup.self, RecentTag.self,

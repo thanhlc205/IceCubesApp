@@ -27,7 +27,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 | 5 | Errors are swallowed instead of logged or shown | Code | 3 | 4 | 3 | **21** | ~1 day for a first pass | Failures look like nothing happened, to users and to developers | First pass done (Phase 1) |
 | 6 | 7 of 13 packages have no tests, and the app has no test target | Test | 3 | 4 | 3 | **21** | 1–2 days for the first two suites | Notifications and account switching change with no safety net | Three suites done: notifications, accounts, `AppRegistry` (Phase 1) |
 | 7 | EmojiText follows a branch on a fork | Dependency | 1 | 3 | 1 | **20** | 15 min | The next dependency update moves it silently; if the branch is deleted, the build breaks | Done (Phase 0) |
-| 8 | Two hand-kept lists of injected services, which already differ | Architecture | 2 | 3 | 2 | **20** | ~½ day | A service added to only one list crashes any sheet or window that reads it | Open |
+| 8 | Two hand-kept lists of injected services, which already differ | Architecture | 2 | 3 | 2 | **20** | ~½ day | A service added to only one list crashes any sheet or window that reads it | Done (Phase 2) |
 | 9 | `asyncAfter` timing hacks | Code | 2 | 3 | 2 | **20** | ~½ day | On slow devices, steps can run in the wrong order | Open |
 | 10 | `@unchecked Sendable` opt-outs | Code | 1 | 3 | 2 | **16** | ~2 h | Each one turns off Swift 6's data-race checking for that type | Open |
 | 11 | `.swiftformat` exists but nothing enforces it | Infra | 2 | 1 | 1 | **15** | ~1 h | Formatting noise in diffs and reviews | SwiftFormat chosen; reformat pending |
@@ -139,6 +139,7 @@ The scores assume this fork will ship. If it stays a personal build, #4 drops to
 - **Evidence:** in [AppRegistry.swift](IceCubesApp/App/Router/AppRegistry.swift), `withAppDependencyGraph` sets up the main window. `withEnvironments()` is used 30 times, for sheets and for the separate editor and media windows. It leaves out `StreamWatcher`, `AppIntentService` and `\.isSupporter`.
 - **Fix:** keep one `AppDependencies` value applied by a single modifier. Sheets already inherit the environment from the view that presents them, so most of the 30 sheet calls can probably go. Check each one before removing it.
 - **Check:** `SheetDestinationTests` opens every sheet inside the main window's services, so after removing a sheet's `.withEnvironments()` it fails if that sheet needed something only that call provided. The separate windows aren't covered.
+- **Done (2026-11-11):** `AppDependencies` is the one list, and `withAppDependencies(_:)` applies it to the main window, the media sheet and the editor and media windows. The editor and media windows now get `StreamWatcher`, `AppIntentService` and `\.isSupporter` too. `withEnvironments()` is gone: the 25 sheets and `NavigationTab` inherit their services, which `SheetDestinationTests` confirms, and `AppDependenciesTests` checks every service reaches a window that applies the list. The windows themselves can't run in a unit test; they get the same modifier. Direct `.shared` calls went down by 8.
 
 ### 9. `asyncAfter` timing hacks
 - **Evidence:** 12 `DispatchQueue.main.asyncAfter` calls. For example, tapping a push notification switches account, then waits 0.2 s before changing tab ([IceCubesApp+Scene.swift:54](IceCubesApp/App/Main/IceCubesApp+Scene.swift:54)).

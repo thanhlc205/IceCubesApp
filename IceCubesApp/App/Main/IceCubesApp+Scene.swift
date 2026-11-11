@@ -5,6 +5,22 @@ import StatusKit
 import SwiftUI
 
 extension IceCubesApp {
+  /// The services every window shows, from the instances this app owns.
+  var appDependencies: AppDependencies {
+    AppDependencies(
+      appAccountsManager: appAccountsManager,
+      currentAccount: currentAccount,
+      currentInstance: currentInstance,
+      userPreferences: userPreferences,
+      theme: theme,
+      watcher: watcher,
+      pushNotificationsService: pushNotificationsService,
+      appIntentService: appIntentService,
+      quickLook: quickLook,
+      toastCenter: toastCenter,
+      isSupporter: isSupporter)
+  }
+
   var appScene: some Scene {
     WindowGroup(id: "MainWindow") {
       AppView(selectedTab: $selectedTab, appRouterPath: $appRouterPath)
@@ -13,19 +29,7 @@ extension IceCubesApp {
           setupRevenueCat()
           refreshPushSubs()
         }
-        .withAppDependencyGraph(
-          appAccountsManager: appAccountsManager,
-          currentAccount: currentAccount,
-          currentInstance: currentInstance,
-          userPreferences: userPreferences,
-          theme: theme,
-          watcher: watcher,
-          pushNotificationsService: pushNotificationsService,
-          appIntentService: appIntentService,
-          quickLook: quickLook,
-          toastCenter: toastCenter,
-          namespace: namespace,
-          isSupporter: isSupporter)
+        .withAppDependencyGraph(appDependencies, namespace: namespace)
         .sheet(item: $quickLook.selectedMediaAttachment) { selectedMediaAttachment in
           if let namespace = quickLook.namespace {
             MediaUIView(
@@ -36,7 +40,7 @@ extension IceCubesApp {
             .presentationBackground(theme.primaryBackgroundColor)
             .presentationCornerRadius(16)
             .presentationSizing(.page)
-            .withEnvironments()
+            .withAppDependencies(appDependencies)
           } else {
             EmptyView()
           }
@@ -104,7 +108,7 @@ extension IceCubesApp {
           EmptyView()
         }
       }
-      .withEnvironments()
+      .withAppDependencies(appDependencies)
       .environment(\.isCatalystWindow, true)
       .environment(RouterPath())
       .withModelContainer()
@@ -125,7 +129,7 @@ extension IceCubesApp {
           EmptyView()
         }
       }
-      .withEnvironments()
+      .withAppDependencies(appDependencies)
       .withModelContainer()
       .applyTheme(theme)
       .environment(\.isCatalystWindow, true)

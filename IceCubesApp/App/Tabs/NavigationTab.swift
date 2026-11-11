@@ -25,7 +25,6 @@ struct NavigationTab<Content: View>: View {
   var body: some View {
     NavigationStack(path: $routerPath.path) {
       content()
-        .withEnvironments()
         .withAppRouter()
         .withSheetDestinations(
           sheetDestinations: $routerPath.presentedSheet,

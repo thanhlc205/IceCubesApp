@@ -105,7 +105,7 @@ struct EditTagGroupView: View {
   Text(verbatim: "parent view for EditTagGroupView")
     .sheet(isPresented: .constant(true)) {
       EditTagGroupView()
-        .withEnvironments()
+        .environment(Theme.shared)
         .modelContainer(container!)
     }
 }
