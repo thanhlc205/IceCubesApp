@@ -1,4 +1,4 @@
-#include? "Secrets.xcconfig"
+#include? "Secrets-release.xcconfig"
 
 DEVELOPMENT_TEAM = Z6P74P6T99
 BUNDLE_ID_PREFIX = com.thomasricouard

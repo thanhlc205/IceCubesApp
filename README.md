@@ -160,8 +160,12 @@ cp IceCubesApp.xcconfig.template IceCubesApp.xcconfig
 
 3. Fill in the `DEVELOPMENT_TEAM` and `BUNDLE_ID_PREFIX` values. The first should have your Apple Team ID (which you can find by logging into the Apple Developer Portal). The latter is your domain in reverse notation or whatever you use as the prefix for your projects. The app group and shared keychain group are derived from `BUNDLE_ID_PREFIX`, so register `group.<BUNDLE_ID_PREFIX>.IceCubesApp` for your team.
 4. Save your changes, and then you should be able to compile the project without any issues.
-5. Optional: to turn on the tip jar (RevenueCat), telemetry (TelemetryDeck), feature requests (WishKit) or server suggestions when adding an account (instances.social), copy the secrets template and fill in your own keys. Services without a key stay off.
+5. Optional: to turn on the tip jar (RevenueCat), telemetry (TelemetryDeck), feature requests (WishKit) or server suggestions when adding an account (instances.social), copy the secrets template and fill in your own keys. Debug builds read `Secrets-debug.xcconfig` and Release builds read `Secrets-release.xcconfig`, so you can keep development keys apart from production ones. Neither falls back to the other, and services without a key stay off.
 
 ```bash
-cp Secrets.xcconfig.template Secrets.xcconfig
+cp Secrets.xcconfig.template Secrets-debug.xcconfig
+```
+
+```bash
+cp Secrets.xcconfig.template Secrets-release.xcconfig
 ```
